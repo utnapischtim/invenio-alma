@@ -33,7 +33,10 @@ setup_requires = [
     "Babel>=2.8",
 ]
 
-install_requires = []
+install_requires = [
+    "click",
+    "requests",
+]
 
 packages = find_packages()
 
@@ -59,6 +62,9 @@ setup(
     include_package_data=True,
     platforms="any",
     entry_points={
+        "flask.commands": [
+            "alma = invenio_alma.cli:alma",
+        ],
         "console_scripts": [
             "alma = invenio_alma.cli:alma",
         ],

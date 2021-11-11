@@ -17,9 +17,11 @@ from flask_principal import Identity
 from invenio_access import any_user
 from invenio_access.utils import get_identity
 from invenio_accounts import current_accounts
+from invenio_rdm_records.records.systemfields.access.field.record import (
+    AccessStatusEnum,
+)
 from invenio_records_marc21 import current_records_marc21
-from invenio_records_marc21.records import Marc21Record
-from invenio_records_marc21.records.systemfields.access import AccessStatusEnum
+from invenio_records_marc21.records.systemfields import MarcDraftProvider
 from invenio_records_marc21.services.record.metadata import Marc21Metadata
 from lxml import etree
 
@@ -83,13 +85,13 @@ def get_record(alma_response: etree) -> etree:
 def create_access():
     return {
         "owned_by": [{"user": system_identity().id}],
-        "files": AccessStatusEnum.PUBLIC.value,
-        "metadata": AccessStatusEnum.PUBLIC.value,
+        "files": AccessStatusEnum.OPEN.value,
+        "metadata": AccessStatusEnum.OPEN.value,
     }
 
 
 def add_file(file_service, draft, file_, identity):
-    draft.files.enable = True
+    draft.files.enabled = True
     draft.commit()
 
     recid = draft["id"]
@@ -133,15 +135,13 @@ def sru(search_key, search_value, domain, institution_code, file_, user):
     access = create_access()
     # identity = get_identity_for_user(user)
     identity = system_identity()
-    print("alma sru identity")
-    pprint(identity)
+
     service = current_records_marc21.records_service
     draft = service.create(metadata=metadata, identity=identity, access=access)
-    print(f"draft.id:  {draft.id}")
 
     add_file(service.draft_files, draft._record, file_, identity)
 
-    record = service.publish(id_=draft.id, identity=system_identity())
+    record = service.publish(id_=draft.id, identity=identity)
 
     print(f"record.id: {record.id}")
 

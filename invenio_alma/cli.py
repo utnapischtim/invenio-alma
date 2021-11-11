@@ -123,7 +123,11 @@ def show(mms_id):
 @click.option("--institution-code", type=click.STRING, required=True)
 @click.option("--file", "file_", type=click.File("rb"), required=False)
 @click.option("--user", type=click.STRING, default="alma@tugraz.at")
-def sru(search_key, search_value, domain, institution_code, file_, user):
+@click.option("--marcid", type=click.STRING, default="")
+def sru(search_key, search_value, domain, institution_code, file_, user, marcid):
+    if marcid:
+        MarcDraftProvider.predefined_pid_value = marcid
+
     response = get_response_from_alma(
         search_key, search_value, domain, institution_code
     )

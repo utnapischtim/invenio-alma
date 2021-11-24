@@ -35,6 +35,7 @@ setup_requires = [
 
 install_requires = [
     "click",
+    "click-option-group",
     "requests",
 ]
 

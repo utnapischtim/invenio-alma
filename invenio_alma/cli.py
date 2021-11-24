@@ -7,11 +7,13 @@
 
 """Command line interface to interact with the Alma-Connector module."""
 
-from os.path import basename
+import csv
+from os.path import basename, isfile
 from pprint import pprint
 
 import click
 import requests
+from click_option_group import RequiredMutuallyExclusiveOptionGroup, optgroup
 from flask.cli import with_appcontext
 from flask_principal import Identity
 from invenio_access import any_user
@@ -24,6 +26,23 @@ from invenio_records_marc21 import current_records_marc21
 from invenio_records_marc21.records.systemfields import MarcDraftProvider
 from invenio_records_marc21.services.record.metadata import Marc21Metadata
 from lxml import etree
+
+
+class CSV(click.ParamType):
+    """CSV provides the ability to load a csv from a file."""
+
+    name = "CSV"
+
+    def convert(self, value, param, ctx) -> csv.DictReader:
+        """This method opens the files as a DictReader object."""
+        if not isfile(value):
+            click.secho("ERROR - please look up if the file path is correct.", fg="red")
+            sys.exit()
+
+        csv_file = open(value)
+        reader = csv.DictReader(csv_file)
+
+        return reader
 
 
 def system_identity():
@@ -104,30 +123,8 @@ def add_file(file_service, draft, file_, identity):
     file_service.commit_file(id_=recid, file_key=filename, identity=identity)
 
 
-@click.group()
-def alma():
-    """Alma CLI."""
-
-
-@alma.command()
-@click.option("--mms-id", type=click.STRING, required=True)
-def show(mms_id):
-    pass
-
-
-@alma.command()
-@with_appcontext
-@click.option("--search-key", type=click.STRING, required=True)
-@click.option("--search-value", type=click.STRING, required=True)
-@click.option("--domain", type=click.STRING, required=True)
-@click.option("--institution-code", type=click.STRING, required=True)
-@click.option("--file", "file_", type=click.File("rb"), required=False)
-@click.option("--user", type=click.STRING, default="alma@tugraz.at")
-@click.option("--marcid", type=click.STRING, default="")
-def sru(search_key, search_value, domain, institution_code, file_, user, marcid):
-    if marcid:
-        MarcDraftProvider.predefined_pid_value = marcid
-
+def create_record(search_key, domain, institution_code, search_value, file_):
+    """Create the record."""
     response = get_response_from_alma(
         search_key, search_value, domain, institution_code
     )
@@ -145,9 +142,56 @@ def sru(search_key, search_value, domain, institution_code, file_, user, marcid)
 
     add_file(service.draft_files, draft._record, file_, identity)
 
-    record = service.publish(id_=draft.id, identity=identity)
+    return service.publish(id_=draft.id, identity=identity)
 
-    print(f"record.id: {record.id}")
+
+@click.group()
+def alma():
+    """Alma CLI."""
+
+
+@alma.command()
+@click.option("--mms-id", type=click.STRING, required=True)
+def show(mms_id):
+    pass
+
+
+@alma.command()
+@with_appcontext
+@optgroup.group("Request Configuration", help="The Configuration for the request")
+@optgroup.option("--search-key", type=click.STRING, required=True)
+@optgroup.option("--domain", type=click.STRING, required=True)
+@optgroup.option("--institution-code", type=click.STRING, required=True)
+@optgroup.group("Manually set the values to search and import")
+@optgroup.option("--search-value", type=click.STRING)
+@optgroup.option("--file", "file_", type=click.File("rb"))
+@optgroup.option("--user", type=click.STRING, default="alma@tugraz.at")
+@optgroup.option("--marcid", type=click.STRING, default="")
+@optgroup.group("Import by file list")
+@optgroup.option("--csv", type=CSV())
+def sru(search_key, domain, institution_code, search_value, file_, user, marcid, csv):
+    """Search on the SRU service of alma."""
+
+    if csv:
+        for row in csv:
+            if "marcid" in row and len(row["marcid"]) > 0:
+                MarcDraftProvider.predefined_pid_value = row["marcid"]
+
+            fp = open(row["filename"], "rb")
+            record = create_record(
+                search_key, domain, institution_code, row["search_value"], fp
+            )
+            print(f"record.id: {record.id}")
+            fp.close()
+
+    else:
+        if marcid:
+            MarcDraftProvider.predefined_pid_value = marcid
+
+        record = create_record(
+            search_key, domain, institution_code, search_value, file_
+        )
+        print(f"record.id: {record.id}")
 
 
 @alma.command()

@@ -19,7 +19,12 @@ from flask.cli import with_appcontext
 from invenio_records_marc21.records.systemfields import MarcDraftProvider
 from sqlalchemy.orm.exc import StaleDataError
 
-from .utils import create_record
+from .utils import (
+    AlmaConfig,
+    RecordConfig,
+    create_record,
+    get_identity_from_user_by_email,
+)
 
 # logging.basicConfig()
 # logging.getLogger("sqlalchemy.engine").setLevel(logging.INFO)
@@ -60,30 +65,34 @@ def show(mms_id):
 @optgroup.option("--domain", type=click.STRING, required=True)
 @optgroup.option("--institution-code", type=click.STRING, required=True)
 @optgroup.group("Manually set the values to search and import")
-@optgroup.option("--search-value", type=click.STRING)
+@optgroup.option("--ac-number", type=click.STRING)
 @optgroup.option("--file", "file_", type=click.File("rb"))
-@optgroup.option("--user", type=click.STRING, default="alma@tugraz.at")
+@optgroup.option("--user-email", type=click.STRING, default="alma@tugraz.at")
 @optgroup.option("--marcid", type=click.STRING, default="")
 @optgroup.group("Import by file list")
 @optgroup.option("--csv", type=CSV())
-def sru(search_key, domain, institution_code, search_value, file_, user, marcid, csv):
+def sru(
+    search_key, domain, institution_code, ac_number, file_, user_email, marcid, csv
+):
     """Search on the SRU service of alma."""
+
+    alma_config = AlmaConfig(search_key, domain, institution_code)
+    identity = get_identity_from_user_by_email(email=user_email)
 
     if csv:
         for row in csv:
-            if len(row["search_value"]) == 0:
+            if len(row["ac_number"]) == 0:
                 continue
 
             if "marcid" in row and len(row["marcid"]) > 0:
                 MarcDraftProvider.predefined_pid_value = row["marcid"]
 
             try:
-                fp = open(row["filename"], "rb")
-                record = create_record(
-                    search_key, domain, institution_code, row["search_value"], fp
-                )
+                with open(row["filename"], "rb") as fp:
+                    record_config = RecordConfig(row["ac_number"], fp)
+                    record = create_record(alma_config, record_config, identity)
+
                 print(f"record.id: {record.id}")
-                fp.close()
             except FileNotFoundError:
                 print(
                     f"FileNotFoundError search_value: {row['search_value']}, filename: {row['filename']}"
@@ -97,9 +106,8 @@ def sru(search_key, domain, institution_code, search_value, file_, user, marcid,
         if marcid:
             MarcDraftProvider.predefined_pid_value = marcid
 
-        record = create_record(
-            search_key, domain, institution_code, search_value, file_
-        )
+        record_config = RecordConfig(ac_number, file_)
+        record = create_record(alma_config, record_config, identity)
         print(f"record.id: {record.id}")
 
 

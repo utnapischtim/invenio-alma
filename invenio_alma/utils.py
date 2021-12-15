@@ -7,68 +7,60 @@
 
 """Common utils functions."""
 
+import time
+import typing as t
+from dataclasses import dataclass
 from os.path import basename
-from pprint import pprint
 
 import requests
 from flask_principal import Identity
-from invenio_access import any_user
 from invenio_access.utils import get_identity
 from invenio_accounts import current_accounts
-from invenio_rdm_records.records.systemfields.access.field.record import (
-    AccessStatusEnum,
-)
 from invenio_records_marc21 import current_records_marc21
 from invenio_records_marc21.services.record.metadata import Marc21Metadata
+from invenio_records_marc21.services.services import Marc21RecordFilesService
 from lxml import etree
 
 
-def system_identity():
-    """System identity."""
-    identity = Identity(1)
-    identity.provides.add(any_user)
-    return identity
+@dataclass(frozen=True)
+class AlmaConfig:
+    search_key: str
+    domain: str
+    institution_code: str
 
 
-def get_user_by_identifier(id_or_email):
+@dataclass(frozen=True)
+class RecordConfig:
+    ac_number: str
+    file_: t.IO
+
+
+def get_identity_from_user_by_email(email: str = None) -> Identity:
     """Get the user specified via email or ID."""
-    if id_or_email is None:
-        raise ValueError("id_or_email cannot be None")
+    if email is None:
+        raise ValueError("the email has to be set to get a identity")
 
-    # note: this seems like the canonical way to go
-    #       'id_or_email' can be either an integer (id) or email address
-    user = current_accounts.datastore.get_user(id_or_email)
-    pprint(user)
+    user = current_accounts.datastore.get_user(email)
+
     if user is None:
-        raise LookupError("user not found: %s" % id_or_email)
+        raise LookupError(f"user with {email} not found")
 
-    return user
-
-
-def get_identity_for_user(user):
-    """Get the Identity for the user specified via email or ID."""
-    if user is None:
-        return system_identity()
-
-    found_user = get_user_by_identifier(user)
-    identity = get_identity(found_user)
-    print("get_identity_for_user")
-    pprint(identity)
-    identity.provides.add(any_user)
-    pprint(identity)
-    return identity
+    return get_identity(user)
 
 
-def get_response_from_alma(
-    search_key: str, search_value: str, domain: str, institution_code: str
-) -> etree:
-    url = f"https://{domain}/view/sru/{institution_code}?version=1.2&operation=searchRetrieve&query=alma.{search_key}={search_value}"
+def get_response_from_alma(alma_config: AlmaConfig, search_value: str) -> etree:
+    base_url = f"https://{alma_config.domain}/view/sru/{alma_config.institution_code}"
+    parameters = f"version=1.2&operation=searchRetrieve&query=alma.{alma_config.search_key}={search_value}"
+    url = f"{base_url}?{parameters}"
+
     response = requests.get(url)
 
     return etree.fromstring(response.text.encode("utf-8"))
 
 
-def get_record(alma_response: etree) -> etree:
+def get_record(alma_config: AlmaConfig, search_value: str) -> etree:
+    alma_response = get_response_from_alma(alma_config, search_value=search_value)
+
     namespaces = {
         "srw": "http://www.loc.gov/zing/srw/",
         "slim": "http://www.loc.gov/MARC21/slim",
@@ -80,46 +72,47 @@ def get_record(alma_response: etree) -> etree:
     return record
 
 
-def create_access():
-    return {
-        "owned_by": [{"user": system_identity().id}],
-        "files": AccessStatusEnum.OPEN.value,
-        "metadata": AccessStatusEnum.OPEN.value,
-    }
-
-
-def add_file(file_service, draft, file_, identity):
-    draft.files.enabled = True
-    draft.commit()
-
-    recid = draft["id"]
+def add_file_to_record(
+    marcid: str,
+    file_: t.IO,
+    file_service: Marc21RecordFilesService,
+    identity: Identity,
+) -> None:
     filename = basename(file_.name)
+    data = [{"key": filename}]
 
-    file_service.init_files(id_=recid, identity=identity, data=[{"key": filename}])
+    file_service.init_files(id_=marcid, identity=identity, data=data)
     file_service.set_file_content(
-        id_=recid, file_key=filename, identity=identity, stream=file_
+        id_=marcid, file_key=filename, identity=identity, stream=file_
     )
-    file_service.commit_file(id_=recid, file_key=filename, identity=identity)
+    file_service.commit_file(id_=marcid, file_key=filename, identity=identity)
 
 
-def create_record(search_key, domain, institution_code, search_value, file_):
+def create_record(
+    alma_config: AlmaConfig,
+    record_config: RecordConfig,
+    identity: Identity,
+):
     """Create the record."""
-    response = get_response_from_alma(
-        search_key, search_value, domain, institution_code
-    )
 
-    record = get_record(response)
+    marc21_etree = get_record(alma_config, search_value=record_config.ac_number)
 
     metadata = Marc21Metadata()
-    metadata.load(record)
-
-    access = create_access()
-    # identity = get_identity_for_user(user)
-    identity = system_identity()
+    metadata.load(marc21_etree)
 
     service = current_records_marc21.records_service
-    draft = service.create(metadata=metadata, identity=identity, access=access)
 
-    add_file(service.draft_files, draft._record, file_, identity)
+    draft = service.create(metadata=metadata, identity=identity, files=True)
+
+    add_file_to_record(
+        marcid=draft._record["id"],
+        file_=record_config.file_,
+        file_service=service.draft_files,
+        identity=identity,
+    )
+
+    # to prevent the race condition bug.
+    # see https://github.com/inveniosoftware/invenio-rdm-records/issues/809
+    time.sleep(0.5)
 
     return service.publish(id_=draft.id, identity=identity)

@@ -17,6 +17,7 @@ import click
 from click_option_group import optgroup
 from flask.cli import with_appcontext
 from invenio_records_marc21.records.systemfields import MarcDraftProvider
+from sqlalchemy.orm.exc import StaleDataError
 
 # logging.basicConfig()
 # logging.getLogger("sqlalchemy.engine").setLevel(logging.INFO)
@@ -68,15 +69,27 @@ def sru(search_key, domain, institution_code, search_value, file_, user, marcid,
 
     if csv:
         for row in csv:
+            if len(row["search_value"]) == 0:
+                continue
+
             if "marcid" in row and len(row["marcid"]) > 0:
                 MarcDraftProvider.predefined_pid_value = row["marcid"]
 
-            fp = open(row["filename"], "rb")
-            record = create_record(
-                search_key, domain, institution_code, row["search_value"], fp
-            )
-            print(f"record.id: {record.id}")
-            fp.close()
+            try:
+                fp = open(row["filename"], "rb")
+                record = create_record(
+                    search_key, domain, institution_code, row["search_value"], fp
+                )
+                print(f"record.id: {record.id}")
+                fp.close()
+            except FileNotFoundError:
+                print(
+                    f"FileNotFoundError search_value: {row['search_value']}, filename: {row['filename']}"
+                )
+            except StaleDataError:
+                print(
+                    f"StaleDataError    search_value: {row['search_value']}, filename: {row['filename']}"
+                )
 
     else:
         if marcid:

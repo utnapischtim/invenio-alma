@@ -19,6 +19,8 @@ from flask.cli import with_appcontext
 from invenio_records_marc21.records.systemfields import MarcDraftProvider
 from sqlalchemy.orm.exc import StaleDataError
 
+from .utils import create_record
+
 # logging.basicConfig()
 # logging.getLogger("sqlalchemy.engine").setLevel(logging.INFO)
 

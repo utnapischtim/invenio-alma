@@ -14,6 +14,7 @@ from os.path import basename
 
 import requests
 from flask_principal import Identity
+from invenio_access import any_user
 from invenio_access.utils import get_identity
 from invenio_accounts import current_accounts
 from invenio_records_marc21 import current_records_marc21
@@ -45,7 +46,12 @@ def get_identity_from_user_by_email(email: str = None) -> Identity:
     if user is None:
         raise LookupError(f"user with {email} not found")
 
-    return get_identity(user)
+    identity = get_identity(user)
+
+    # TODO: this is a temporary solution. this should be done with data from the db
+    identity.provides.add(any_user)
+
+    return identity
 
 
 def get_response_from_alma(alma_config: AlmaConfig, search_value: str) -> etree:

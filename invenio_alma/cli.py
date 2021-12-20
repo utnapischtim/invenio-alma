@@ -95,11 +95,11 @@ def sru(
                 print(f"record.id: {record.id}")
             except FileNotFoundError:
                 print(
-                    f"FileNotFoundError search_value: {row['search_value']}, filename: {row['filename']}"
+                    f"FileNotFoundError search_value: {row['ac_number']}, filename: {row['filename']}"
                 )
             except StaleDataError:
                 print(
-                    f"StaleDataError    search_value: {row['search_value']}, filename: {row['filename']}"
+                    f"StaleDataError    search_value: {row['ac_number']}, filename: {row['filename']}"
                 )
 
     else:

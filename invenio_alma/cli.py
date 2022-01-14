@@ -47,6 +47,41 @@ class CSV(click.ParamType):
         return reader
 
 
+def handle_csv(csv, alma_config, identity):
+    for row in csv:
+        if len(row["ac_number"]) == 0:
+            continue
+
+        if "marcid" in row and len(row["marcid"]) > 0:
+            MarcDraftProvider.predefined_pid_value = row["marcid"]
+
+        try:
+            fp = open(row["filename"], "rb")
+            record_config = RecordConfig(row["ac_number"], fp)
+        except FileNotFoundError:
+            print(f"FileNotFoundError search_value: {row['ac_number']}")
+
+        try:
+            record = create_record(alma_config, record_config, identity)
+            print(f"record.id: {record.id}")
+        except StaleDataError:
+            print(f"StaleDataError    search_value: {row['ac_number']}")
+        else:
+            fp.close()
+
+
+def handle_single_import(ac_number, marcid, file_, alma_config, identity):
+    if marcid:
+        MarcDraftProvider.predefined_pid_value = marcid
+
+    record_config = RecordConfig(ac_number, file_)
+    try:
+        record = create_record(alma_config, record_config, identity)
+        print(f"record.id: {record.id}")
+    except StaleDataError:
+        print(f"StaleDataError    search_value: {ac_number}")
+
+
 @click.group()
 def alma():
     """Alma CLI."""
@@ -80,35 +115,9 @@ def sru(
     identity = get_identity_from_user_by_email(email=user_email)
 
     if csv:
-        for row in csv:
-            if len(row["ac_number"]) == 0:
-                continue
-
-            if "marcid" in row and len(row["marcid"]) > 0:
-                MarcDraftProvider.predefined_pid_value = row["marcid"]
-
-            try:
-                with open(row["filename"], "rb") as fp:
-                    record_config = RecordConfig(row["ac_number"], fp)
-                    record = create_record(alma_config, record_config, identity)
-
-                print(f"record.id: {record.id}")
-            except FileNotFoundError:
-                print(
-                    f"FileNotFoundError search_value: {row['ac_number']}, filename: {row['filename']}"
-                )
-            except StaleDataError:
-                print(
-                    f"StaleDataError    search_value: {row['ac_number']}, filename: {row['filename']}"
-                )
-
+        handle_csv(csv, alma_config, identity)
     else:
-        if marcid:
-            MarcDraftProvider.predefined_pid_value = marcid
-
-        record_config = RecordConfig(ac_number, file_)
-        record = create_record(alma_config, record_config, identity)
-        print(f"record.id: {record.id}")
+        handle_single_import(ac_number, marcid, file_, alma_config, identity)
 
 
 @alma.command()

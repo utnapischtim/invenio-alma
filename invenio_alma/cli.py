@@ -60,6 +60,7 @@ def handle_csv(csv, alma_config, identity):
             record_config = RecordConfig(row["ac_number"], fp)
         except FileNotFoundError:
             print(f"FileNotFoundError search_value: {row['ac_number']}")
+            continue
 
         try:
             record = create_record(alma_config, record_config, identity)

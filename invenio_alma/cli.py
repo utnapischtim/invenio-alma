@@ -41,14 +41,15 @@ class CSV(click.ParamType):
             click.secho("ERROR - please look up if the file path is correct.", fg="red")
             sys.exit()
 
-        csv_file = open(value)
+        csv_file = open(value, mode="r", encoding="utf-8")
         reader = csv.DictReader(csv_file)
 
         return reader
 
 
-def handle_csv(csv, alma_config, identity):
-    for row in csv:
+def handle_csv(csv_file, alma_config, identity):
+    """Process csv file."""
+    for row in csv_file:
         if len(row["ac_number"]) == 0:
             continue
 
@@ -56,8 +57,8 @@ def handle_csv(csv, alma_config, identity):
             MarcDraftProvider.predefined_pid_value = row["marcid"]
 
         try:
-            fp = open(row["filename"], "rb")
-            record_config = RecordConfig(row["ac_number"], fp)
+            file_pointer = open(row["filename"], mode="rb", encoding="utf-8")
+            record_config = RecordConfig(row["ac_number"], file_pointer)
         except FileNotFoundError:
             print(f"FileNotFoundError search_value: {row['ac_number']}")
             continue
@@ -67,11 +68,12 @@ def handle_csv(csv, alma_config, identity):
             print(f"record.id: {record.id}")
         except StaleDataError:
             print(f"StaleDataError    search_value: {row['ac_number']}")
-        else:
-            fp.close()
+        finally:
+            file_pointer.close()
 
 
 def handle_single_import(ac_number, marcid, file_, alma_config, identity):
+    """Process a single import of a alma record by ac number."""
     if marcid:
         MarcDraftProvider.predefined_pid_value = marcid
 
@@ -88,10 +90,10 @@ def alma():
     """Alma CLI."""
 
 
-@alma.command()
-@click.option("--mms-id", type=click.STRING, required=True)
-def show(mms_id):
-    pass
+# @alma.command()
+# @click.option("--mms-id", type=click.STRING, required=True)
+# def show(mms_id):
+#     """Show entry by mms_id."""
 
 
 @alma.command()
@@ -106,22 +108,15 @@ def show(mms_id):
 @optgroup.option("--user-email", type=click.STRING, default="alma@tugraz.at")
 @optgroup.option("--marcid", type=click.STRING, default="")
 @optgroup.group("Import by file list")
-@optgroup.option("--csv", type=CSV())
+@optgroup.option("--csv-file", type=CSV())
 def sru(
-    search_key, domain, institution_code, ac_number, file_, user_email, marcid, csv
+    search_key, domain, institution_code, ac_number, file_, user_email, marcid, csv_file
 ):
     """Search on the SRU service of alma."""
-
     alma_config = AlmaConfig(search_key, domain, institution_code)
     identity = get_identity_from_user_by_email(email=user_email)
 
-    if csv:
-        handle_csv(csv, alma_config, identity)
+    if csv_file:
+        handle_csv(csv_file, alma_config, identity)
     else:
         handle_single_import(ac_number, marcid, file_, alma_config, identity)
-
-
-@alma.command()
-@with_appcontext
-def file_upload(ac, marcid, filename):
-    pass

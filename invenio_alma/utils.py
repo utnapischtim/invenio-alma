@@ -25,6 +25,8 @@ from lxml import etree
 
 @dataclass(frozen=True)
 class AlmaConfig:
+    """Alma config."""
+
     search_key: str
     domain: str
     institution_code: str
@@ -32,6 +34,8 @@ class AlmaConfig:
 
 @dataclass(frozen=True)
 class RecordConfig:
+    """Record config."""
+
     ac_number: str
     file_: t.IO
 
@@ -55,8 +59,10 @@ def get_identity_from_user_by_email(email: str = None) -> Identity:
 
 
 def get_response_from_alma(alma_config: AlmaConfig, search_value: str) -> etree:
+    """Get the record from alma."""
     base_url = f"https://{alma_config.domain}/view/sru/{alma_config.institution_code}"
-    parameters = f"version=1.2&operation=searchRetrieve&query=alma.{alma_config.search_key}={search_value}"
+    query = f"query=alma.{alma_config.search_key}={search_value}"
+    parameters = f"version=1.2&operation=searchRetrieve&{query}"
     url = f"{base_url}?{parameters}"
 
     response = requests.get(url)
@@ -65,6 +71,7 @@ def get_response_from_alma(alma_config: AlmaConfig, search_value: str) -> etree:
 
 
 def get_record(alma_config: AlmaConfig, search_value: str) -> etree:
+    """Extract record from the response."""
     alma_response = get_response_from_alma(alma_config, search_value=search_value)
 
     namespaces = {
@@ -84,6 +91,7 @@ def add_file_to_record(
     file_service: Marc21RecordFilesService,
     identity: Identity,
 ) -> None:
+    """Add the file to the record."""
     filename = basename(file_.name)
     data = [{"key": filename}]
 
@@ -100,7 +108,6 @@ def create_record(
     identity: Identity,
 ):
     """Create the record."""
-
     marc21_etree = get_record(alma_config, search_value=record_config.ac_number)
 
     metadata = Marc21Metadata()
@@ -111,7 +118,7 @@ def create_record(
     draft = service.create(metadata=metadata, identity=identity, files=True)
 
     add_file_to_record(
-        marcid=draft._record["id"],
+        marcid=draft._record["id"],  # pylint: disable=protected-access
         file_=record_config.file_,
         file_service=service.draft_files,
         identity=identity,

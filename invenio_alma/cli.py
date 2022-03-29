@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright (C) 2021 Graz University of Technology.
+# Copyright (C) 2021-2022 Graz University of Technology.
 #
 # invenio-alma is free software; you can redistribute it and/or modify it
 # under the terms of the MIT License; see LICENSE file for more details.
@@ -57,7 +57,7 @@ def handle_csv(csv_file, alma_config, identity):
             MarcDraftProvider.predefined_pid_value = row["marcid"]
 
         try:
-            file_pointer = open(row["filename"], mode="rb", encoding="utf-8")
+            file_pointer = open(row["filename"], mode="r", encoding="utf-8")
             record_config = RecordConfig(row["ac_number"], file_pointer)
         except FileNotFoundError:
             print(f"FileNotFoundError search_value: {row['ac_number']}")
@@ -104,7 +104,7 @@ def alma():
 @optgroup.option("--institution-code", type=click.STRING, required=True)
 @optgroup.group("Manually set the values to search and import")
 @optgroup.option("--ac-number", type=click.STRING)
-@optgroup.option("--file", "file_", type=click.File("rb"))
+@optgroup.option("--file", "file_", type=click.File("r"))
 @optgroup.option("--user-email", type=click.STRING, default="alma@tugraz.at")
 @optgroup.option("--marcid", type=click.STRING, default="")
 @optgroup.group("Import by file list")

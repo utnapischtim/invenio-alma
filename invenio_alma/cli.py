@@ -125,8 +125,8 @@ def sru(
 
 @alma.command("update-url-in-alma")
 @with_appcontext
-@click.option("--user-email", type=click.STRING)
-@click.option("--url", type=click.STRING)
+@click.option("--user-email", type=click.STRING, required=True)
+@click.option("--url", type=click.STRING, required=True)
 def update_url_in_alma(user_email, url):
     """Update url in remote repository records.
 

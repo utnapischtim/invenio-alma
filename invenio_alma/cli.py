@@ -19,6 +19,7 @@ from flask.cli import with_appcontext
 from invenio_records_marc21.records.systemfields import MarcDraftProvider
 from sqlalchemy.orm.exc import StaleDataError
 
+from .proxies import current_alma
 from .utils import (
     AlmaConfig,
     RecordConfig,
@@ -120,3 +121,18 @@ def sru(
         handle_csv(csv_file, alma_config, identity)
     else:
         handle_single_import(ac_number, marcid, file_, alma_config, identity)
+
+
+@alma.command("update-url-in-alma")
+@with_appcontext
+@click.option("--user-email", type=click.STRING)
+@click.option("--url", type=click.STRING)
+def update_url_in_alma(user_email, url):
+    """Update url in remote repository records.
+
+    :params user_email (str): username to authenticate
+    :params url (str): new repository url. Url must contain '{recid}'
+    """
+    identity = get_identity_from_user_by_email(email=user_email)
+    records = current_alma.repository_service.get_records(identity)
+    current_alma.alma_service.update_url(records, url)

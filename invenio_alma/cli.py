@@ -15,8 +15,10 @@ from os.path import isfile
 
 import click
 from click_option_group import optgroup
+from elasticsearch_dsl import Q
 from flask.cli import with_appcontext
 from invenio_records_marc21.records.systemfields import MarcDraftProvider
+from invenio_search import RecordsSearch
 from sqlalchemy.orm.exc import StaleDataError
 
 from .proxies import current_alma
@@ -29,6 +31,15 @@ from .utils import (
 
 # logging.basicConfig()
 # logging.getLogger("sqlalchemy.engine").setLevel(logging.INFO)
+
+
+class DuplicateRecordError(Exception):
+    """Duplicate Record Exception."""
+
+    def __init__(self, ac_number):
+        """Constructor for class DuplicateRecordException."""
+        msg = f"ac_number: {ac_number} already exists in the database"
+        super().__init__(msg)
 
 
 class CSV(click.ParamType):
@@ -48,6 +59,16 @@ class CSV(click.ParamType):
         return reader
 
 
+def check_about_duplicate(record_config):
+    """Check if the record with the ac number is already within the database."""
+    search = RecordsSearch(index="marc21records-marc21")
+    search.query = Q("match", **{"metadata.fields.009": record_config.ac_number})
+    results = search.execute()
+
+    if len(results) > 0:
+        raise DuplicateRecordError(ac_number=record_config.ac_number)
+
+
 def handle_csv(csv_file, alma_config, identity):
     """Process csv file."""
     for row in csv_file:
@@ -61,10 +82,15 @@ def handle_csv(csv_file, alma_config, identity):
             file_pointer = open(row["filename"], mode="rb")
             record_config = RecordConfig(row["ac_number"], file_pointer)
 
+            check_about_duplicate(record_config)
+
             record = create_record(alma_config, record_config, identity)
             print(f"record.id: {record.id}")
         except FileNotFoundError:
             print(f"FileNotFoundError search_value: {row['ac_number']}")
+        except DuplicateRecordError as error:
+            print(error)
+            file_pointer.close()
         except StaleDataError:
             print(f"StaleDataError    search_value: {row['ac_number']}")
             file_pointer.close()
@@ -77,8 +103,12 @@ def handle_single_import(ac_number, marcid, file_, alma_config, identity):
 
     record_config = RecordConfig(ac_number, file_)
     try:
+        check_about_duplicate(record_config)
+
         record = create_record(alma_config, record_config, identity)
         print(f"record.id: {record.id}")
+    except DuplicateRecordError as error:
+        print(error)
     except StaleDataError:
         print(f"StaleDataError    search_value: {ac_number}")
 

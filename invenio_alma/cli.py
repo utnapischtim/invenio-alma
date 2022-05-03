@@ -75,42 +75,30 @@ def handle_csv(csv_file, alma_config, identity):
         if len(row["ac_number"]) == 0:
             continue
 
-        if "marcid" in row and len(row["marcid"]) > 0:
-            MarcDraftProvider.predefined_pid_value = row["marcid"]
-
-        try:
-            file_pointer = open(row["filename"], mode="rb")
-            record_config = RecordConfig(row["ac_number"], file_pointer)
-
-            check_about_duplicate(record_config)
-
-            record = create_record(alma_config, record_config, identity)
-            print(f"record.id: {record.id}")
-        except FileNotFoundError:
-            print(f"FileNotFoundError search_value: {row['ac_number']}")
-        except DuplicateRecordError as error:
-            print(error)
-            file_pointer.close()
-        except StaleDataError:
-            print(f"StaleDataError    search_value: {row['ac_number']}")
-            file_pointer.close()
+        handle_single_import(**row, alma_config=alma_config, identity=identity)
 
 
-def handle_single_import(ac_number, marcid, file_, alma_config, identity):
+def handle_single_import(ac_number, filename, alma_config, identity, marcid=None, **_):
     """Process a single import of a alma record by ac number."""
     if marcid:
         MarcDraftProvider.predefined_pid_value = marcid
 
-    record_config = RecordConfig(ac_number, file_)
     try:
+        file_pointer = open(filename, mode="rb")
+        record_config = RecordConfig(ac_number, file_pointer)
+
         check_about_duplicate(record_config)
 
         record = create_record(alma_config, record_config, identity)
         print(f"record.id: {record.id}")
+    except FileNotFoundError:
+        print(f"FileNotFoundError search_value: {ac_number}")
     except DuplicateRecordError as error:
         print(error)
+        file_pointer.close()
     except StaleDataError:
         print(f"StaleDataError    search_value: {ac_number}")
+        file_pointer.close()
 
 
 @click.group()
@@ -132,13 +120,20 @@ def alma():
 @optgroup.option("--institution-code", type=click.STRING, required=True)
 @optgroup.group("Manually set the values to search and import")
 @optgroup.option("--ac-number", type=click.STRING)
-@optgroup.option("--file", "file_", type=click.File("rb"))
+@optgroup.option("--filename", type=click.STRING)
 @optgroup.option("--user-email", type=click.STRING, default="alma@tugraz.at")
 @optgroup.option("--marcid", type=click.STRING, default="")
 @optgroup.group("Import by file list")
 @optgroup.option("--csv-file", type=CSV())
 def sru(
-    search_key, domain, institution_code, ac_number, file_, user_email, marcid, csv_file
+    search_key,
+    domain,
+    institution_code,
+    ac_number,
+    filename,
+    user_email,
+    marcid,
+    csv_file,
 ):
     """Search on the SRU service of alma."""
     alma_config = AlmaConfig(search_key, domain, institution_code)
@@ -147,7 +142,7 @@ def sru(
     if csv_file:
         handle_csv(csv_file, alma_config, identity)
     else:
-        handle_single_import(ac_number, marcid, file_, alma_config, identity)
+        handle_single_import(ac_number, filename, alma_config, identity, marcid)
 
 
 @alma.command("update-url-in-alma")

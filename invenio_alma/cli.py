@@ -60,16 +60,13 @@ def handle_csv(csv_file, alma_config, identity):
         try:
             file_pointer = open(row["filename"], mode="rb")
             record_config = RecordConfig(row["ac_number"], file_pointer)
-        except FileNotFoundError:
-            print(f"FileNotFoundError search_value: {row['ac_number']}")
-            continue
 
-        try:
             record = create_record(alma_config, record_config, identity)
             print(f"record.id: {record.id}")
+        except FileNotFoundError:
+            print(f"FileNotFoundError search_value: {row['ac_number']}")
         except StaleDataError:
             print(f"StaleDataError    search_value: {row['ac_number']}")
-        finally:
             file_pointer.close()
 
 

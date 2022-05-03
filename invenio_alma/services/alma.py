@@ -9,17 +9,55 @@
 """Alma Service."""
 
 import requests
-from lxml import etree
+from lxml.etree import fromstring, tostring
 
-from .base import BaseService
+from .config import AlmaServiceConfig
 from .errors import AlmaRESTException
 
 
-class AlmaRESTService(BaseService):
+class AlmaRESTUrls:
+    """Alma REST urls."""
+
+    def __init__(self, config):
+        """Constructor Alma REST Urls."""
+        self.config = config
+
+    @property
+    def base_url(self):
+        """Base url."""
+        return f"https://{self.config.api_host}/almaws/v1/bibs"
+
+    def url_get(self, mms_id):
+        """Alma rest api get record url.
+
+        :param mms_id (str): alma record id
+
+        :return str: alma api url.
+        """
+        return f"{self.config.base_url}?mms_id={mms_id}&apikey={self.config.api_key}"
+
+    def url_put(self, mms_id):
+        """Alma rest api put record url.
+
+        :param mms_id (str): alma record id
+
+        :return str: alma api url.
+        """
+        return f"{self.config.base_url}?{mms_id}?apikey={self.config.api_key}"
+
+
+class AlmaRESTService:
     """Alma REST service class."""
 
-    @staticmethod
-    def get(url):
+    @property
+    def headers(self):
+        """Headers."""
+        return {
+            "content-type": "application/xml",
+            "accept": "application/xml",
+        }
+
+    def get(self, url):
         """Alma rest api get request.
 
         :param url (str): url to api
@@ -28,13 +66,12 @@ class AlmaRESTService(BaseService):
 
         :return str: response content
         """
-        response = requests.get(url, headers={"accept": "application/xml"})
+        response = requests.get(url, headers=self.headers)
         if response.status_code >= 400:
             raise AlmaRESTException(code=response.status_code, msg=response.text)
         return response.text
 
-    @staticmethod
-    def put(url, data):
+    def put(self, url, data):
         """Alma rest api put request.
 
         :param url (str): url to api
@@ -44,21 +81,23 @@ class AlmaRESTService(BaseService):
 
         :return str: response content
         """
-        response = requests.put(
-            url,
-            data,
-            headers={"content-type": "application/xml", "accept": "application/xml"},
-        )
+        response = requests.put(url, data, headers=self.headers)
         if response.status_code >= 400:
             raise AlmaRESTException(code=response.status_code, msg=response.text)
         return response.text
 
 
-class AlmaService(AlmaRESTService):
+class AlmaService:
     """Alma service class."""
 
+    def __init__(self, config, rest_urls, rest_service):
+        """Constructor for AlmaService."""
+        self.config = config
+        self.rest_urls = rest_urls
+        self.rest_service = rest_service
+
     @staticmethod
-    def _extract_almarecord(data):
+    def _extract_alma_record(data):
         """Extract record from request.
 
         :param data (str): result list
@@ -67,38 +106,46 @@ class AlmaService(AlmaRESTService):
         """
         if isinstance(data, str):
             data = data.encode("utf-8")
-        record = etree.fromstring(data)
+        record = fromstring(data)
+
         # extract single record
         bib = record.xpath(".//bib")
         if len(bib) > 0:
             record = bib[0]
+
         return record
 
-    def update_url(self, records, new_url):
+    @classmethod
+    def build(cls, api_key, api_host):
+        """Build method."""
+        config = AlmaServiceConfig(api_key, api_host)
+        rest_urls = AlmaRESTUrls(config)
+        rest_service = AlmaRESTService()
+        return cls(config, rest_urls, rest_service)
+
+    def update_url(self, mms_id, new_url):
         """Change url in a record.
 
         :param records ([Dict]): List of repository records
         :params new_url (str): new repository url. Url must contain '{recid}'
         """
-        for record in records:
-            mms_id = self.deep_get(record, self.config.mms_id_path)
-            rec_id = self.deep_get(record, self.config.rec_id_path)
+        # prepare record
+        api_url = self.rest_urls.url_get(mms_id)
+        data = self.rest_service.get(api_url)
+        metadata = self._extract_alma_record(data)
 
-            # prepare record
-            api_url = self.config.url_get(mms_id)
-            data = self.get(api_url)
-            metadata = self._extract_almarecord(data)
+        # extract url subfield
+        url_datafield = metadata.xpath(self.config.url_xpath)
 
-            # extract url subfield
-            url_datafield = metadata.xpath(self.config.url_path)
+        if len(url_datafield) == 0:
+            # No URL subfield in a record
+            # TODO: create new datafield
+            return
 
-            if len(url_datafield) == 0:
-                # No URL subfield in a record
-                continue
+        url_datafield = url_datafield[0]
+        url_datafield.text = new_url
+        alma_record = tostring(metadata)
+        alma_record = alma_record.decode("UTF-8")
+        url_put = self.rest_urls.url_put(mms_id)
 
-            url_datafield = url_datafield[0]
-            url_datafield.text = new_url.format(recid=rec_id)
-            alma_record = etree.tostring(metadata)
-            alma_record = alma_record.decode("UTF-8")
-            url_put = self.config.url_put(mms_id)
-            self.put(url_put, alma_record)
+        self.rest_service.put(url_put, alma_record)

@@ -22,6 +22,7 @@ from invenio_search import RecordsSearch
 from sqlalchemy.orm.exc import StaleDataError
 
 from .proxies import current_alma
+from .services.utils import deep_get
 from .utils import (
     AlmaConfig,
     RecordConfig,
@@ -157,4 +158,8 @@ def update_url_in_alma(user_email, url):
     """
     identity = get_identity_from_user_by_email(email=user_email)
     records = current_alma.repository_service.get_records(identity)
-    current_alma.alma_service.update_url(records, url)
+
+    for record in records:
+        mms_id = deep_get(record, current_alma.repository_service.config.mms_id_path)
+        doi = deep_get(record, current_alma.repository_service.config.doi_path)
+        current_alma.alma_service.update_url(mms_id, doi)

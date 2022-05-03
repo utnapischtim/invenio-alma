@@ -7,8 +7,10 @@
 
 """Invenio module to connect InvenioRDM to Alma."""
 
+from invenio_records_marc21.proxies import current_records_marc21
+
 from . import config
-from .services import AlmaService, AlmaServiceConfig, RepositoryService
+from .services import AlmaService, RepositoryService
 
 
 class InvenioAlma:
@@ -31,14 +33,12 @@ class InvenioAlma:
             if k.startswith("INVENIO_ALMA_"):
                 app.config.setdefault(k, getattr(config, k))
 
-    def init_services(self, app):  # pylint: disable=no-self-use
+    def init_services(self, app):
         """Initialize service."""
-        configuration = AlmaServiceConfig.build(app)
-        # pylint: disable-next=attribute-defined-outside-init
-        self.alma_service = AlmaService(
-            config=configuration,
-        )
-        # pylint: disable-next=attribute-defined-outside-init
-        self.repository_service = RepositoryService(
-            config=configuration,
-        )
+        api_key = app.config.get("INVENIO_ALMA_API_KEY", "")
+        api_host = app.config.get("INVENIO_ALMA_API_HOST", "")
+
+        repository_service_config = RepositoryServiceConfig()
+
+        self.alma_service = AlmaService.build(api_key, api_host)
+        self.repository_service = RepositoryService(config=repository_service_config)

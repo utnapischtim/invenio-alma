@@ -8,9 +8,8 @@
 
 """Alma service repository module."""
 
-from invenio_records_marc21.proxies import current_records_marc21
-
 from .base import BaseService
+from .config import RepositoryServiceConfig
 
 
 class RepositoryService(BaseService):
@@ -22,15 +21,14 @@ class RepositoryService(BaseService):
         :param config: A service configuration
         :param record_service: A repository service. Default to current_records_marc21
         """
-        super().__init__(config)
-        self._record_module = (
-            record_service if record_service else current_records_marc21
-        )
+        self.config = config
+        self.record_service = record_service.record_service
 
-    @property
-    def _record_service(self):
-        """Marc21 repository records service."""
-        return self._record_module.records_service
+    @classmethod
+    def build(cls, record_service):
+        """Build method."""
+        config = RepositoryServiceConfig()
+        return cls(config, record_service)
 
     def _search(self, identity, **kwargs):
         """Search records in the repository.
@@ -39,7 +37,7 @@ class RepositoryService(BaseService):
 
         :return dict: hits of repository records.
         """
-        results = self._record_service.scan(identity, **kwargs)
+        results = self.record_service.scan(identity, **kwargs)
         results = results.to_dict()
         return results
 

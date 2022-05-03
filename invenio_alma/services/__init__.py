@@ -8,11 +8,12 @@
 """Invenio service to connect InvenioRDM to Alma."""
 
 from .alma import AlmaService
-from .config import AlmaServiceConfig
+from .config import AlmaServiceConfig, RepositoryServiceConfig
 from .repository import RepositoryService
 
 __all__ = (
     "AlmaServiceConfig",
+    "RepositoryServiceConfig",
     "AlmaService",
     "RepositoryService",
 )

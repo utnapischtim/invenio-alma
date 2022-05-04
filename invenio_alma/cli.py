@@ -7,8 +7,8 @@
 
 """Command line interface to interact with the Alma-Connector module."""
 
-import csv
 import sys
+from csv import DictReader
 
 # import logging
 from os.path import isfile
@@ -22,7 +22,6 @@ from invenio_search import RecordsSearch
 from sqlalchemy.orm.exc import StaleDataError
 
 from .proxies import current_alma
-from .services.utils import deep_get
 from .utils import (
     AlmaConfig,
     RecordConfig,
@@ -48,14 +47,38 @@ class CSV(click.ParamType):
 
     name = "CSV"
 
-    def convert(self, value, param, ctx) -> csv.DictReader:
+    def __init__(self, header=None):
+        """Constructor of CSV type."""
+        super().__init__()
+        self.header = header
+        self.check_header = header is not None
+
+    @property
+    def headers(self):
+        return self.header.split(",")
+
+    def is_header_as_expected(self, csv_file):
+        """"""
+        reader = DictReader(csv_file)
+        first_row = next(reader)
+        # because iterator has no previous method
+        csv_file.seek(0)
+
+        return all(name in first_row for name in self.headers)
+
+    def convert(self, value, param, ctx) -> DictReader:
         """This method opens the files as a DictReader object."""
         if not isfile(value):
             click.secho("ERROR - please look up if the file path is correct.", fg="red")
             sys.exit()
 
         csv_file = open(value, mode="r", encoding="utf-8")
-        reader = csv.DictReader(csv_file)
+        reader = DictReader(csv_file)
+
+        if self.check_header and not self.is_header_as_expected(csv_file):
+            msg = f"ERROR - the header should have the form: {self.header}."
+            click.secho(msg, fg="red")
+            sys.exit()
 
         return reader
 
@@ -148,18 +171,16 @@ def sru(
 
 @alma.command("update-url-in-alma")
 @with_appcontext
-@click.option("--user-email", type=click.STRING, required=True)
-@click.option("--url", type=click.STRING, required=True)
-def update_url_in_alma(user_email, url):
+@click.option(
+    "--csv-file",
+    type=CSV(header="mms_id,new_url"),
+    required=True,
+    help="two columns: mms_id and new_url",
+)
+def update_url_in_alma(csv_file):
     """Update url in remote repository records.
 
-    :params user_email (str): username to authenticate
-    :params url (str): new repository url. Url must contain '{recid}'
+    :params csv_file (file) with two columns mms_id and new_url
     """
-    identity = get_identity_from_user_by_email(email=user_email)
-    records = current_alma.repository_service.get_records(identity)
-
-    for record in records:
-        mms_id = deep_get(record, current_alma.repository_service.config.mms_id_path)
-        doi = deep_get(record, current_alma.repository_service.config.doi_path)
-        current_alma.alma_service.update_url(mms_id, doi)
+    for row in csv_file:
+        current_alma.alma_service.update_url(**row)

@@ -8,13 +8,25 @@
 """Services exceptions."""
 
 
-class AlmaException(Exception):
-    """Base exception for Alma errors."""
+class AlmaAPIError(Exception):
+    """Alma API error class."""
+
+    def __init__(self, msg):
+        """Constructor for alma api error."""
+        super().__init__(msg)
 
 
-class AlmaRESTException(AlmaException):
-    """Alma Rest API exception class."""
+class AlmaRESTError(Exception):
+    """Alma Rest API error class."""
 
     def __init__(self, code, msg):
-        """Initialise error."""
+        """Constructor for alma rest error."""
         super().__init__(f"Alma API error code={code} msg='{msg}'")
+
+
+class AlmaSRUError(Exception):
+    """Alma SRU error class"""
+
+    def __init__(self, code, msg):
+        """Constructor for alma sru error."""
+        super().__init__(f"Alma sru error code={code} msg='{msg}'")

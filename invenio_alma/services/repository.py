@@ -22,7 +22,7 @@ class RepositoryService(BaseService):
         :param record_service: A repository service. Default to current_records_marc21
         """
         self.config = config
-        self.record_service = record_service.record_service
+        self.record_service = record_service
 
     @classmethod
     def build(cls, record_service):

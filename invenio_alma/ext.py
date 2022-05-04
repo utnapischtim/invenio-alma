@@ -38,7 +38,7 @@ class InvenioAlma:
         api_key = app.config.get("INVENIO_ALMA_API_KEY", "")
         api_host = app.config.get("INVENIO_ALMA_API_HOST", "")
 
-        repository_service_config = RepositoryServiceConfig()
-
         self.alma_service = AlmaService.build(api_key, api_host)
-        self.repository_service = RepositoryService(config=repository_service_config)
+        # self.repository_service = RepositoryService.build(
+        #     current_records_marc21.record_service
+        # )

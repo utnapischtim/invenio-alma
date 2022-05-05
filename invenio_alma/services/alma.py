@@ -191,28 +191,49 @@ class AlmaService:
         rest_service = AlmaRESTService()
         return cls(config, rest_urls, rest_service)
 
-    def update_url(self, mms_id, new_url):
-        """Change url in a record.
+    def jpath_to_xpath(self, field_json_path):
+        """Convert json path to xpath."""
+        # TODO
 
-        :param records ([Dict]): List of repository records
-        :params new_url (str): new repository url. Url must contain '{recid}'
-        """
-        # prepare record
+    def get_record(self, mms_id):
+        """Get Record from alma."""
         api_url = self.rest_urls.url_get(mms_id)
-        records = self.rest_service.get(api_url)
+        return self.rest_service.get(api_url)  # return etree
 
-        # extract url subfield
-        url_datafield = metadata.xpath(self.config.url_xpath)
+    def get_field(self, record, field_json_path, subfield_value=""):
+        """Get field by json path and subfield value if it is set."""
+        xpath = self.jpath_to_xpath(field_json_path)
+        field = record.xpath(xpath)
 
-        if len(url_datafield) == 0:
-            # No URL subfield in a record
-            # TODO: create new datafield
-            return
+        # TODO check about multiple results
+        # allowed only one field, otherwise we have a problem and should sys.exit()
 
-        url_datafield = url_datafield[0]
-        url_datafield.text = new_url
-        alma_record = tostring(metadata)
-        alma_record = alma_record.decode("UTF-8")
+        return field
+
+    def replace_field(self, field, new_subfield_value, new_subfield_template=""):
+        """Replace in-inplace the subfield value with the new subfield value.
+        Replace also the metametadata of the field if the template is set."""
+
+        # TODO: implement new_subfield_template != ""
+
+        field.text = new_subfield_value
+
+    def update_alma_record(self, mms_id, record):
+        """Update the record on alma side."""
+        data = tostring(record)  # TODO check if .decode("UTF-8") is necessary
         url_put = self.rest_urls.url_put(mms_id)
+        self.rest_service.put(url_put, data)
 
-        self.rest_service.put(url_put, alma_record)
+    def update_field(
+        self,
+        mms_id,
+        field_json_path,
+        new_subfield_value,
+        subfield_value="",
+        new_subfield_template="",
+    ):
+        """Update field."""
+        record = self.get_record(mms_id)
+        field = self.get_field(record, field_json_path, subfield_value)  # reference
+        self.replace_field(field, new_subfield_value, new_subfield_template)  # in-place
+        self.update_alma_record(mms_id, record)

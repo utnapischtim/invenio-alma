@@ -16,10 +16,6 @@ class AlmaServiceConfig:
 
     api_host = ""
     api_key = ""
-    # TODO: check if ind1 and ind2 has to be checked or not
-    url_xpath = (
-        ".//datafield[@ind1='4' and @ind2=' ' and @tag='856']/subfield[@code='u']"
-    )
 
     def __init__(self, api_key, api_host):
         """Constructor for the Alma service config."""
@@ -31,6 +27,6 @@ class AlmaServiceConfig:
 class RepositoryServiceConfig:
     """Repository service configuration class."""
 
-    mms_id_path = "metadata.fields.001"
-    ac_id_path = "metadata.fields.009"
-    rec_id_path = "id"
+    mms_id_jpath = "metadata.fields.001"
+    ac_id_jpath = "metadata.fields.009"
+    rec_id_jpath = "id"

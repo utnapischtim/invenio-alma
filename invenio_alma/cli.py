@@ -17,6 +17,7 @@ import click
 from click_option_group import optgroup
 from elasticsearch_dsl import Q
 from flask.cli import with_appcontext
+from invenio_records_marc21 import current_records_marc21
 from invenio_records_marc21.records.systemfields import MarcDraftProvider
 from invenio_search import RecordsSearch
 from sqlalchemy.orm.exc import StaleDataError
@@ -83,6 +84,8 @@ class CSV(click.ParamType):
         return reader
 
 
+# TODO:
+# move to invenio-records-marc21
 def check_about_duplicate(record_config):
     """Check if the record with the ac number is already within the database."""
     search = RecordsSearch(index="marc21records-marc21")
@@ -183,4 +186,74 @@ def update_url_in_alma(csv_file):
     :params csv_file (file) with two columns mms_id and new_url
     """
     for row in csv_file:
-        current_alma.alma_service.update_url(**row)
+        current_alma.alma_service.update_field(
+            row["mms_id"], "856.4._.u", row["new_url"]
+        )
+
+
+@alma.command()
+@with_appcontext
+@click.option("--mms-id", type=click.STRING, required=True)
+@click.option(
+    "--field-json-path", type=click.STRING, required=True, help="e.g. 100.1._.u"
+)
+@click.option("--subfield-value", type=click.STRING, default="")
+@click.option("--new-subfield-value", type=click.STRING, required=True)
+@click.option(
+    "--new-subfield-template",
+    type=click.STRING,
+    help="the template is given as json path 100.2.1.u",
+    default="",
+)
+def update_field(
+    mms_id, field_json_path, subfield_value, new_subfield_value, new_subfield_template
+):
+    """Update field."""
+    current_alma.alma_service.update_field(
+        mms_id,
+        field_json_path,
+        new_subfield_value,
+        subfield_value,
+        new_subfield_template,
+    )
+
+
+@alma.group()
+def create():
+    """Alma Create group."""
+
+
+@create.command("alma-record")
+@click.option("--marc-id", type=click.STRING, required=True)
+def create_alma_record(marc_id):
+    """Create alma record."""
+    # TODO:
+    # create a record within alma from an existing repository record with the
+    # marcid=[MARCID]
+    # use service provided by invenio-records-marc21 to get the record. current
+    # package should not write a service for the marc21 datamodel
+
+    # SKETCH:
+    record = current_records_marc21.record_service.get_record(marc_id, type_="marcxml")
+    mms_id = current_alma.alma_service.create_record(record)
+    # DISCUSS:
+    # "035...a" vs "035. . .a" vs "035._._.a"
+    current_records_marc21.record_service.add_field(marc_id, "035._._.a", mms_id)
+
+
+@create.command("repository-record")
+@click.option("--mms-id", type=click.STRING, required=True)
+def create_repository_record(mms_id):
+    """Create repository record."""
+    # TODO:
+    # create a record within the repository from an existing alma record
+    # with mms_id=[MMS_ID]
+    # use service provided by invenio-records-marc21 to create the record
+
+    # SKETCH
+    record = current_alma.record_service.get_record(mms_id)
+
+    # TODO:
+    # massage data to move 001 mms-id to 035__a (tugraz)mms-id
+
+    # current_records_marc21.record_service.create_record()

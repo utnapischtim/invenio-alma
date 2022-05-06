@@ -11,8 +11,8 @@
 import requests
 from lxml.etree import fromstring, tostring
 
-from .config import AlmaServiceConfig
-from .errors import AlmaAPIError, AlmaRESTError, AlmaSRUError
+from .config import AlmaRESTConfig, AlmaSRUConfig
+from .errors import AlmaAPIError, AlmaRESTError
 
 
 class AlmaRESTUrls:
@@ -75,7 +75,7 @@ class AlmaSRUUrls:
         return f"{self.base_url}?{self.parameters}"
 
 
-class AlmaAPIBaseService:
+class AlmaAPIBase:
     """Alma remote base service."""
 
     def __init__(self, xpath_to_records, namespaces=None):
@@ -117,16 +117,8 @@ class AlmaAPIBaseService:
 
         return bibs
 
-
-class AlmaRESTService(AlmaAPIBaseService):
-    """Alma REST service class."""
-
-    def __init__(self):
-        """Constructor alma rest service."""
-        super().__init__(".//bib/record")
-
     def get(self, url):
-        """Alma rest api get request.
+        """Alma base api get request.
 
         :param url (str): url to api
 
@@ -136,8 +128,16 @@ class AlmaRESTService(AlmaAPIBaseService):
         """
         response = requests.get(url, headers=self.headers)
         if response.status_code >= 400:
-            raise AlmaRESTError(code=response.status_code, msg=response.text)
+            raise AlmaAPIError(code=response.status_code, msg=response.text)
         return self.extract_alma_records(response.text)
+
+
+class AlmaREST(AlmaAPIBase):
+    """Alma REST service class."""
+
+    def __init__(self):
+        """Constructor alma rest service."""
+        super().__init__(".//bib/record")
 
     def put(self, url, data):
         """Alma rest api put request.
@@ -155,7 +155,7 @@ class AlmaRESTService(AlmaAPIBaseService):
         return response.text
 
 
-class AlmaSRUService(AlmaAPIBaseService):
+class AlmaSRU(AlmaAPIBase):
     """Alma SRU Service class."""
 
     def __init__(self):
@@ -166,15 +166,8 @@ class AlmaSRUService(AlmaAPIBaseService):
         }
         super().__init__(".//srw:recordData/slim:record", namespaces)
 
-    def sru(self, url):
-        """Alma sru service get record."""
-        response = requests.get(url, headers=self.headers)
-        if response.status_code >= 400:
-            raise AlmaSRUError(code=response.status_code, msg=response.text)
-        return response.text
 
-
-class AlmaService:
+class AlmaRESTService:
     """Alma service class."""
 
     def __init__(self, config, rest_urls, rest_service):
@@ -186,9 +179,9 @@ class AlmaService:
     @classmethod
     def build(cls, api_key, api_host):
         """Build method."""
-        config = AlmaServiceConfig(api_key, api_host)
+        config = AlmaRESTConfig(api_key, api_host)
         rest_urls = AlmaRESTUrls(config)
-        rest_service = AlmaRESTService()
+        rest_service = AlmaREST()
         return cls(config, rest_urls, rest_service)
 
     def jpath_to_xpath(self, field_json_path):
@@ -237,3 +230,21 @@ class AlmaService:
         field = self.get_field(record, field_json_path, subfield_value)  # reference
         self.replace_field(field, new_subfield_value, new_subfield_template)  # in-place
         self.update_alma_record(mms_id, record)
+
+
+class AlmaSRUService:
+    def __init__(self, config, rest_urls, rest_service):
+        """Constructor for AlmaService."""
+        self.config = config
+        self.rest_urls = rest_urls
+        self.rest_service = rest_service
+
+    @classmethod
+    def build(cls, search_key, domain, institution_code):
+        """Build sru service."""
+        config = AlmaSRUConfig(search_key, domain, institution_code)
+        rest_urls = AlmaSRUUrls(config)
+        rest_service = AlmaSRU()
+        return (config, rest_urls, rest_service)
+
+    def get_record(self,

@@ -8,36 +8,13 @@
 """Common utils functions."""
 
 import time
-import typing as t
-from dataclasses import dataclass
-from os.path import basename
 
-import requests
 from flask_principal import Identity
 from invenio_access import any_user
 from invenio_access.utils import get_identity
 from invenio_accounts import current_accounts
 from invenio_records_marc21 import current_records_marc21
-from invenio_records_marc21.services.record.metadata import Marc21Metadata
 from invenio_records_marc21.services.services import Marc21RecordFilesService
-from lxml import etree
-
-
-@dataclass(frozen=True)
-class AlmaConfig:
-    """Alma config."""
-
-    search_key: str
-    domain: str
-    institution_code: str
-
-
-@dataclass(frozen=True)
-class RecordConfig:
-    """Record config."""
-
-    ac_number: str
-    file_: t.IO
 
 
 def get_identity_from_user_by_email(email: str = None) -> Identity:
@@ -58,68 +35,32 @@ def get_identity_from_user_by_email(email: str = None) -> Identity:
     return identity
 
 
-def get_response_from_alma(alma_config: AlmaConfig, search_value: str) -> etree:
-    """Get the record from alma."""
-    base_url = f"https://{alma_config.domain}/view/sru/{alma_config.institution_code}"
-    query = f"query=alma.{alma_config.search_key}={search_value}"
-    parameters = f"version=1.2&operation=searchRetrieve&{query}"
-    url = f"{base_url}?{parameters}"
-
-    response = requests.get(url)
-
-    return etree.fromstring(response.text.encode("utf-8"))
-
-
-def get_record(alma_config: AlmaConfig, search_value: str) -> etree:
-    """Extract record from the response."""
-    alma_response = get_response_from_alma(alma_config, search_value=search_value)
-
-    namespaces = {
-        "srw": "http://www.loc.gov/zing/srw/",
-        "slim": "http://www.loc.gov/MARC21/slim",
-    }
-    record = alma_response.find(".//srw:recordData//slim:record", namespaces=namespaces)
-
-    # TODO error handling
-
-    return record
-
-
 def add_file_to_record(
     marcid: str,
-    file_: t.IO,
+    filename: str,
     file_service: Marc21RecordFilesService,
     identity: Identity,
 ) -> None:
     """Add the file to the record."""
-    filename = basename(file_.name)
     data = [{"key": filename}]
 
-    file_service.init_files(id_=marcid, identity=identity, data=data)
-    file_service.set_file_content(
-        id_=marcid, file_key=filename, identity=identity, stream=file_
-    )
-    file_service.commit_file(id_=marcid, file_key=filename, identity=identity)
+    with open(filename, mode="rb") as file_pointer:
+        file_service.init_files(id_=marcid, identity=identity, data=data)
+        file_service.set_file_content(
+            id_=marcid, file_key=filename, identity=identity, stream=file_pointer
+        )
+        file_service.commit_file(id_=marcid, file_key=filename, identity=identity)
 
 
-def create_record(
-    alma_config: AlmaConfig,
-    record_config: RecordConfig,
-    identity: Identity,
-):
+def create_record(marc21_metadata, filename, identity):
     """Create the record."""
-    marc21_etree = get_record(alma_config, search_value=record_config.ac_number)
-
-    metadata = Marc21Metadata()
-    metadata.load(marc21_etree)
-
     service = current_records_marc21.records_service
 
-    draft = service.create(metadata=metadata, identity=identity, files=True)
+    draft = service.create(metadata=marc21_metadata, identity=identity, files=True)
 
     add_file_to_record(
         marcid=draft._record["id"],  # pylint: disable=protected-access
-        file_=record_config.file_,
+        filename=filename,
         file_service=service.draft_files,
         identity=identity,
     )

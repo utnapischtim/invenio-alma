@@ -7,10 +7,8 @@
 
 """Invenio module to connect InvenioRDM to Alma."""
 
-from invenio_records_marc21.proxies import current_records_marc21
-
 from . import config
-from .services import AlmaService, RepositoryService
+from .services import AlmaRESTService
 
 
 class InvenioAlma:
@@ -38,7 +36,4 @@ class InvenioAlma:
         api_key = app.config.get("INVENIO_ALMA_API_KEY", "")
         api_host = app.config.get("INVENIO_ALMA_API_HOST", "")
 
-        self.alma_service = AlmaService.build(api_key, api_host)
-        self.repository_service = RepositoryService.build(
-            record_service=current_records_marc21.record_service
-        )
+        self.alma_rest_service = AlmaRESTService.build(api_key, api_host)

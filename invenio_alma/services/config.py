@@ -10,23 +10,27 @@
 from dataclasses import dataclass
 
 
-@dataclass
-class AlmaServiceConfig:
+@dataclass(frozen=True)
+class AlmaRESTConfig:
     """Alma service configuration class."""
 
-    api_host = ""
-    api_key = ""
-
-    def __init__(self, api_key, api_host):
-        """Constructor for the Alma service config."""
-        self.api_key = api_key
-        self.api_host = api_host
+    api_host: str = ""
+    api_key: str = ""
 
 
-@dataclass
+@dataclass(frozen=True)
+class AlmaSRUConfig:
+    """ "Alma sru service config."""
+
+    search_key: str = ""
+    domain: str = ""
+    institution_code: str = ""
+
+
+@dataclass(frozen=True)
 class RepositoryServiceConfig:
     """Repository service configuration class."""
 
-    mms_id_jpath = "metadata.fields.001"
-    ac_id_jpath = "metadata.fields.009"
-    rec_id_jpath = "id"
+    mms_id_jpath: str = "metadata.fields.001"
+    ac_id_jpath: str = "metadata.fields.009"
+    rec_id_jpath: str = "id"

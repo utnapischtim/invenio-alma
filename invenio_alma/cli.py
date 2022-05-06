@@ -19,16 +19,13 @@ from elasticsearch_dsl import Q
 from flask.cli import with_appcontext
 from invenio_records_marc21 import current_records_marc21
 from invenio_records_marc21.records.systemfields import MarcDraftProvider
+from invenio_records_marc21.services.record.metadata import Marc21Metadata
 from invenio_search import RecordsSearch
 from sqlalchemy.orm.exc import StaleDataError
 
 from .proxies import current_alma
-from .utils import (
-    AlmaConfig,
-    RecordConfig,
-    create_record,
-    get_identity_from_user_by_email,
-)
+from .services import AlmaSRUService
+from .utils import create_record, get_identity_from_user_by_email
 
 # logging.basicConfig()
 # logging.getLogger("sqlalchemy.engine").setLevel(logging.INFO)
@@ -86,57 +83,50 @@ class CSV(click.ParamType):
 
 # TODO:
 # move to invenio-records-marc21
-def check_about_duplicate(record_config):
+def check_about_duplicate(ac_number):
     """Check if the record with the ac number is already within the database."""
     search = RecordsSearch(index="marc21records-marc21")
-    search.query = Q("match", **{"metadata.fields.009": record_config.ac_number})
+    search.query = Q("match", **{"metadata.fields.009": ac_number})
     results = search.execute()
 
     if len(results) > 0:
-        raise DuplicateRecordError(ac_number=record_config.ac_number)
+        raise DuplicateRecordError(ac_number=ac_number)
 
 
-def handle_csv(csv_file, alma_config, identity):
+def handle_csv(alma_sru_service, csv_file, identity):
     """Process csv file."""
     for row in csv_file:
         if len(row["ac_number"]) == 0:
             continue
 
-        handle_single_import(**row, alma_config=alma_config, identity=identity)
+        handle_single_import(alma_sru_service, **row, identity=identity)
 
 
-def handle_single_import(ac_number, filename, alma_config, identity, marcid=None, **_):
+def handle_single_import(
+    alma_sru_service, ac_number, filename, identity, marcid=None, **_
+):
     """Process a single import of a alma record by ac number."""
     if marcid:
         MarcDraftProvider.predefined_pid_value = marcid
 
     try:
-        file_pointer = open(filename, mode="rb")
-        record_config = RecordConfig(ac_number, file_pointer)
+        check_about_duplicate(ac_number)
 
-        check_about_duplicate(record_config)
+        marc21_record = Marc21Metadata(alma_sru_service.get_record(ac_number))
+        record = create_record(marc21_record, filename, identity)
 
-        record = create_record(alma_config, record_config, identity)
         print(f"record.id: {record.id}")
     except FileNotFoundError:
         print(f"FileNotFoundError search_value: {ac_number}")
     except DuplicateRecordError as error:
         print(error)
-        file_pointer.close()
     except StaleDataError:
         print(f"StaleDataError    search_value: {ac_number}")
-        file_pointer.close()
 
 
 @click.group()
 def alma():
     """Alma CLI."""
-
-
-# @alma.command()
-# @click.option("--mms-id", type=click.STRING, required=True)
-# def show(mms_id):
-#     """Show entry by mms_id."""
 
 
 @alma.command()
@@ -163,13 +153,13 @@ def sru(
     csv_file,
 ):
     """Search on the SRU service of alma."""
-    alma_config = AlmaConfig(search_key, domain, institution_code)
     identity = get_identity_from_user_by_email(email=user_email)
+    alma_sru_service = AlmaSRUService.build(search_key, domain, institution_code)
 
     if csv_file:
-        handle_csv(csv_file, alma_config, identity)
+        handle_csv(alma_sru_service, csv_file, identity)
     else:
-        handle_single_import(ac_number, filename, alma_config, identity, marcid)
+        handle_single_import(alma_sru_service, ac_number, filename, identity, marcid)
 
 
 @alma.command("update-url-in-alma")
@@ -186,7 +176,7 @@ def update_url_in_alma(csv_file):
     :params csv_file (file) with two columns mms_id and new_url
     """
     for row in csv_file:
-        current_alma.alma_service.update_field(
+        current_alma.alma_rest_service.update_field(
             row["mms_id"], "856.4._.u", row["new_url"]
         )
 
@@ -209,7 +199,7 @@ def update_field(
     mms_id, field_json_path, subfield_value, new_subfield_value, new_subfield_template
 ):
     """Update field."""
-    current_alma.alma_service.update_field(
+    current_alma.alma_rest_service.update_field(
         mms_id,
         field_json_path,
         new_subfield_value,
@@ -235,7 +225,7 @@ def create_alma_record(marc_id):
 
     # SKETCH:
     record = current_records_marc21.record_service.get_record(marc_id, type_="marcxml")
-    mms_id = current_alma.alma_service.create_record(record)
+    mms_id = current_alma.alma_rest_service.create_record(record)
     # DISCUSS:
     # "035...a" vs "035. . .a" vs "035._._.a"
     current_records_marc21.record_service.add_field(marc_id, "035._._.a", mms_id)

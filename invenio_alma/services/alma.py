@@ -170,19 +170,19 @@ class AlmaSRU(AlmaAPIBase):
 class AlmaRESTService:
     """Alma service class."""
 
-    def __init__(self, config, rest_urls, rest_service):
+    def __init__(self, config, urls, service):
         """Constructor for AlmaService."""
         self.config = config
-        self.rest_urls = rest_urls
-        self.rest_service = rest_service
+        self.urls = urls
+        self.service = service
 
     @classmethod
     def build(cls, api_key, api_host):
         """Build method."""
         config = AlmaRESTConfig(api_key, api_host)
-        rest_urls = AlmaRESTUrls(config)
-        rest_service = AlmaREST()
-        return cls(config, rest_urls, rest_service)
+        urls = AlmaRESTUrls(config)
+        service = AlmaREST()
+        return cls(config, urls, service)
 
     def jpath_to_xpath(self, field_json_path):
         """Convert json path to xpath."""
@@ -190,8 +190,8 @@ class AlmaRESTService:
 
     def get_record(self, mms_id):
         """Get Record from alma."""
-        api_url = self.rest_urls.url_get(mms_id)
-        return self.rest_service.get(api_url)  # return etree
+        api_url = self.urls.url_get(mms_id)
+        return self.service.get(api_url)  # return etree
 
     def get_field(self, record, field_json_path, subfield_value=""):
         """Get field by json path and subfield value if it is set."""
@@ -214,8 +214,8 @@ class AlmaRESTService:
     def update_alma_record(self, mms_id, record):
         """Update the record on alma side."""
         data = tostring(record)  # TODO check if .decode("UTF-8") is necessary
-        url_put = self.rest_urls.url_put(mms_id)
-        self.rest_service.put(url_put, data)
+        url_put = self.urls.url_put(mms_id)
+        self.service.put(url_put, data)
 
     def update_field(
         self,
@@ -233,18 +233,21 @@ class AlmaRESTService:
 
 
 class AlmaSRUService:
-    def __init__(self, config, rest_urls, rest_service):
+    def __init__(self, config, urls, service):
         """Constructor for AlmaService."""
         self.config = config
-        self.rest_urls = rest_urls
-        self.rest_service = rest_service
+        self.urls = urls
+        self.service = service
 
     @classmethod
     def build(cls, search_key, domain, institution_code):
         """Build sru service."""
         config = AlmaSRUConfig(search_key, domain, institution_code)
-        rest_urls = AlmaSRUUrls(config)
-        rest_service = AlmaSRU()
-        return (config, rest_urls, rest_service)
+        urls = AlmaSRUUrls(config)
+        service = AlmaSRU()
+        return (config, urls, service)
 
-    def get_record(self,
+    def get_record(self, ac_number):
+        """Get the record."""
+        url = self.urls.url(ac_number)
+        return self.service.get(url)

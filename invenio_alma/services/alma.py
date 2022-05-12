@@ -15,6 +15,12 @@ from .config import AlmaRESTConfig, AlmaSRUConfig
 from .errors import AlmaAPIError, AlmaRESTError
 
 
+def jpath_to_xpath(field_json_path):
+    """Convert json path to xpath."""
+    # TODO
+    return ""
+
+
 class AlmaRESTUrls:
     """Alma REST urls."""
 
@@ -34,7 +40,7 @@ class AlmaRESTUrls:
 
         :return str: alma api url.
         """
-        return f"{self.config.base_url}?mms_id={mms_id}&apikey={self.config.api_key}"
+        return f"{self.base_url}?mms_id={mms_id}&apikey={self.config.api_key}"
 
     def url_put(self, mms_id):
         """Alma rest api put record url.
@@ -43,7 +49,7 @@ class AlmaRESTUrls:
 
         :return str: alma api url.
         """
-        return f"{self.config.base_url}?{mms_id}?apikey={self.config.api_key}"
+        return f"{self.base_url}/{mms_id}?apikey={self.config.api_key}"
 
 
 class AlmaSRUUrls:
@@ -92,7 +98,7 @@ class AlmaAPIBase:
         }
 
     @staticmethod
-    def parse_alma_record(self, data):
+    def parse_alma_record(data):
         """Parse Alma record."""
         data = data.encode("utf-8")
 
@@ -105,8 +111,7 @@ class AlmaAPIBase:
 
         :return lxml.Element: extracted record
         """
-
-        record = self.parse_alma_record
+        record = self.parse_alma_record(data)
 
         # extract single record
         bibs = record.xpath(self.xpath_to_records, namespaces=self.namespaces)
@@ -177,25 +182,23 @@ class AlmaRESTService:
         self.service = service
 
     @classmethod
-    def build(cls, api_key, api_host):
+    def build(cls, api_key, api_host, config=None, urls=None, service=None):
         """Build method."""
-        config = AlmaRESTConfig(api_key, api_host)
-        urls = AlmaRESTUrls(config)
-        service = AlmaREST()
+        config = config if config else AlmaRESTConfig(api_key, api_host)
+        urls = urls if urls else AlmaRESTUrls(config)
+        service = service if service else AlmaREST()
         return cls(config, urls, service)
-
-    def jpath_to_xpath(self, field_json_path):
-        """Convert json path to xpath."""
-        # TODO
 
     def get_record(self, mms_id):
         """Get Record from alma."""
         api_url = self.urls.url_get(mms_id)
         return self.service.get(api_url)  # return etree
 
-    def get_field(self, record, field_json_path, subfield_value=""):
+    # pylint: disable-next=unused-argument
+    @staticmethod
+    def get_field(record, field_json_path, subfield_value=""):
         """Get field by json path and subfield value if it is set."""
-        xpath = self.jpath_to_xpath(field_json_path)
+        xpath = jpath_to_xpath(field_json_path)
         field = record.xpath(xpath)
 
         # TODO check about multiple results
@@ -203,10 +206,13 @@ class AlmaRESTService:
 
         return field
 
-    def replace_field(self, field, new_subfield_value, new_subfield_template=""):
+    @staticmethod
+    # pylint: disable-next=unused-argument
+    def replace_field(field, new_subfield_value, new_subfield_template=""):
         """Replace in-inplace the subfield value with the new subfield value.
-        Replace also the metametadata of the field if the template is set."""
 
+        Replace also the metametadata of the field if the template is set.
+        """
         # TODO: implement new_subfield_template != ""
 
         field.text = new_subfield_value
@@ -233,6 +239,8 @@ class AlmaRESTService:
 
 
 class AlmaSRUService:
+    """AlmaSRUService."""
+
     def __init__(self, config, urls, service):
         """Constructor for AlmaService."""
         self.config = config
@@ -240,11 +248,15 @@ class AlmaSRUService:
         self.service = service
 
     @classmethod
-    def build(cls, search_key, domain, institution_code):
+    def build(
+        cls, search_key, domain, institution_code, config=None, urls=None, service=None
+    ):
         """Build sru service."""
-        config = AlmaSRUConfig(search_key, domain, institution_code)
-        urls = AlmaSRUUrls(config)
-        service = AlmaSRU()
+        config = (
+            config if config else AlmaSRUConfig(search_key, domain, institution_code)
+        )
+        urls = urls if urls else AlmaSRUUrls(config)
+        service = service if service else AlmaSRU()
         return (config, urls, service)
 
     def get_record(self, ac_number):

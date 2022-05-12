@@ -53,10 +53,11 @@ class CSV(click.ParamType):
 
     @property
     def headers(self):
+        """Headers."""
         return self.header.split(",")
 
     def is_header_as_expected(self, csv_file):
-        """"""
+        """Check if the header is as expected."""
         reader = DictReader(csv_file)
         first_row = next(reader)
         # because iterator has no previous method

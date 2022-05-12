@@ -11,20 +11,10 @@ See https://pytest-invenio.readthedocs.io/ for documentation on which test
 fixtures are available.
 """
 
-
 import pytest
 from flask import Flask
 
 from invenio_alma import InvenioAlma
-
-
-@pytest.fixture(scope="module")
-def celery_config():
-    """Override pytest-invenio fixture.
-
-    TODO: Remove this fixture if you add Celery support.
-    """
-    return {}
 
 
 @pytest.fixture(scope="module")

@@ -14,23 +14,14 @@ from dataclasses import dataclass
 class AlmaRESTConfig:
     """Alma service configuration class."""
 
-    api_host: str = ""
     api_key: str = ""
+    api_host: str = ""
 
 
 @dataclass(frozen=True)
 class AlmaSRUConfig:
-    """ "Alma sru service config."""
+    """Alma sru service config."""
 
     search_key: str = ""
     domain: str = ""
     institution_code: str = ""
-
-
-@dataclass(frozen=True)
-class RepositoryServiceConfig:
-    """Repository service configuration class."""
-
-    mms_id_jpath: str = "metadata.fields.001"
-    ac_id_jpath: str = "metadata.fields.009"
-    rec_id_jpath: str = "id"

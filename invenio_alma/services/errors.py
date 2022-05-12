@@ -11,10 +11,6 @@
 class AlmaAPIError(Exception):
     """Alma API error class."""
 
-    def __init__(self, msg):
-        """Constructor for alma api error."""
-        super().__init__(msg)
-
 
 class AlmaRESTError(Exception):
     """Alma Rest API error class."""
@@ -25,7 +21,7 @@ class AlmaRESTError(Exception):
 
 
 class AlmaSRUError(Exception):
-    """Alma SRU error class"""
+    """Alma SRU error class."""
 
     def __init__(self, code, msg):
         """Constructor for alma sru error."""

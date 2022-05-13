@@ -15,6 +15,7 @@ from .config import AlmaRESTConfig, AlmaSRUConfig
 from .errors import AlmaAPIError, AlmaRESTError
 
 
+# pylint: disable-next=unused-argument
 def jpath_to_xpath(field_json_path):
     """Convert json path to xpath."""
     # TODO
@@ -194,8 +195,8 @@ class AlmaRESTService:
         api_url = self.urls.url_get(mms_id)
         return self.service.get(api_url)  # return etree
 
-    # pylint: disable-next=unused-argument
     @staticmethod
+    # pylint: disable-next=unused-argument
     def get_field(record, field_json_path, subfield_value=""):
         """Get field by json path and subfield value if it is set."""
         xpath = jpath_to_xpath(field_json_path)

@@ -242,7 +242,7 @@ def create_repository_record(mms_id):
     # use service provided by invenio-records-marc21 to create the record
 
     # SKETCH
-    record = current_alma.record_service.get_record(mms_id)
+    # record = current_alma.record_service.get_record(mms_id)
 
     # TODO:
     # massage data to move 001 mms-id to 035__a (tugraz)mms-id

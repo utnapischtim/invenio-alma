@@ -257,7 +257,7 @@ class AlmaSRUService:
         )
         urls = urls if urls else AlmaSRUUrls(config)
         service = service if service else AlmaSRU()
-        return (config, urls, service)
+        return cls(config, urls, service)
 
     def get_record(self, ac_number):
         """Get the record."""

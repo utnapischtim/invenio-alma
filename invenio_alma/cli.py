@@ -234,8 +234,9 @@ def create_alma_record(marc_id):
 
 @create.command("repository-record")
 @click.option("--mms-id", type=click.STRING, required=True)
-def create_repository_record(mms_id):
+def create_repository_record(mms_id):  # pylint: disable=unused-argument
     """Create repository record."""
+    print("not yet implemented")
     # TODO:
     # create a record within the repository from an existing alma record
     # with mms_id=[MMS_ID]

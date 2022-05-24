@@ -104,7 +104,7 @@ def handle_csv(alma_sru_service, csv_file, identity):
 
 
 def handle_single_import(
-    alma_sru_service, ac_number, filename, identity, marcid=None, **_
+    alma_sru_service, ac_number, file_path, identity, marcid=None, **_
 ):
     """Process a single import of a alma record by ac number."""
     if marcid:
@@ -114,7 +114,7 @@ def handle_single_import(
         check_about_duplicate(ac_number)
 
         marc21_record = Marc21Metadata(alma_sru_service.get_record(ac_number))
-        record = create_record(marc21_record, filename, identity)
+        record = create_record(marc21_record, file_path, identity)
 
         print(f"record.id: {record.id}")
     except FileNotFoundError:

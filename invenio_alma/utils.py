@@ -8,6 +8,7 @@
 """Common utils functions."""
 
 import time
+from os.path import basename
 
 from flask_principal import Identity
 from invenio_access import any_user
@@ -37,14 +38,15 @@ def get_identity_from_user_by_email(email: str = None) -> Identity:
 
 def add_file_to_record(
     marcid: str,
-    filename: str,
+    file_path: str,
     file_service: Marc21RecordFilesService,
     identity: Identity,
 ) -> None:
     """Add the file to the record."""
+    filename = basename(file_path)
     data = [{"key": filename}]
 
-    with open(filename, mode="rb") as file_pointer:
+    with open(file_path, mode="rb") as file_pointer:
         file_service.init_files(id_=marcid, identity=identity, data=data)
         file_service.set_file_content(
             id_=marcid, file_key=filename, identity=identity, stream=file_pointer
@@ -52,7 +54,7 @@ def add_file_to_record(
         file_service.commit_file(id_=marcid, file_key=filename, identity=identity)
 
 
-def create_record(marc21_metadata, filename, identity):
+def create_record(marc21_metadata, file_path, identity):
     """Create the record."""
     service = current_records_marc21.records_service
 
@@ -60,7 +62,7 @@ def create_record(marc21_metadata, filename, identity):
 
     add_file_to_record(
         marcid=draft._record["id"],  # pylint: disable=protected-access
-        filename=filename,
+        file_path=file_path,
         file_service=service.draft_files,
         identity=identity,
     )

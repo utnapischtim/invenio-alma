@@ -7,6 +7,12 @@
 Changes
 =======
 
+Version v0.4.3 (release 2022-08-02)
+
+- add ac number to the success output
+- fix ValidationError problem
+
+
 Version v0.4.2 (release 2022-08-02)
 
 - remove no_self_use, pylint Closes #5502

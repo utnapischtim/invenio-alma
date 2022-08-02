@@ -7,6 +7,11 @@
 Changes
 =======
 
+Version v0.4.1 (release 2022-08-02)
+
+- fix elasticsearch ConnectionTimeout problem
+
+
 Version 0.1.0 (released TBD)
 
 - Initial public release.

@@ -12,9 +12,11 @@ from csv import DictReader
 
 # import logging
 from os.path import isfile
+from time import sleep
 
 import click
 from click_option_group import optgroup
+from elasticsearch import ConnectionTimeout
 from elasticsearch_dsl import Q
 from flask.cli import with_appcontext
 from invenio_records_marc21 import current_records_marc21
@@ -110,19 +112,38 @@ def handle_single_import(
     if marcid:
         MarcDraftProvider.predefined_pid_value = marcid
 
-    try:
-        check_about_duplicate(ac_number)
+    retry_counter = 0
+    while True:
+        try:
+            check_about_duplicate(ac_number)
 
-        marc21_record = Marc21Metadata(alma_sru_service.get_record(ac_number))
-        record = create_record(marc21_record, file_path, identity)
+            marc21_record = Marc21Metadata(alma_sru_service.get_record(ac_number))
+            record = create_record(marc21_record, file_path, identity)
 
-        print(f"record.id: {record.id}")
-    except FileNotFoundError:
-        print(f"FileNotFoundError search_value: {ac_number}")
-    except DuplicateRecordError as error:
-        print(error)
-    except StaleDataError:
-        print(f"StaleDataError    search_value: {ac_number}")
+            print(f"record.id: {record.id}")
+            return
+        except FileNotFoundError:
+            print(f"FileNotFoundError search_value: {ac_number}")
+            return
+        except DuplicateRecordError as error:
+            print(error)
+            return
+        except StaleDataError:
+            print(f"StaleDataError    search_value: {ac_number}")
+            return
+        except ConnectionTimeout:
+            msg = f"ConnectionTimeout search_value: {ac_number}, retry_counter: {retry_counter}"
+            print(msg)
+
+            # cool down the elasticsearch indexing process. necessary for
+            # multiple imports in a short timeframe
+            sleep(100)
+
+            # don't overestimate the problem. if three rounds doesn't help go to
+            # the next ac number
+            if retry_counter > 3:
+                return
+            retry_counter += 1
 
 
 @click.group()

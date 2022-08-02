@@ -23,6 +23,7 @@ from invenio_records_marc21 import current_records_marc21
 from invenio_records_marc21.records.systemfields import MarcDraftProvider
 from invenio_records_marc21.services.record.metadata import Marc21Metadata
 from invenio_search import RecordsSearch
+from marshmallow.exceptions import ValidationError
 from sqlalchemy.orm.exc import StaleDataError
 
 from .proxies import current_alma
@@ -130,6 +131,9 @@ def handle_single_import(
             return
         except StaleDataError:
             print(f"StaleDataError    search_value: {ac_number}")
+            return
+        except ValidationError:
+            print(f"ValidationError   search_value: {ac_number}")
             return
         except ConnectionTimeout:
             msg = f"ConnectionTimeout search_value: {ac_number}, retry_counter: {retry_counter}"

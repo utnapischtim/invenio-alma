@@ -121,7 +121,7 @@ def handle_single_import(
             marc21_record = Marc21Metadata(alma_sru_service.get_record(ac_number))
             record = create_record(marc21_record, file_path, identity)
 
-            print(f"record.id: {record.id}")
+            print(f"record.id: {record.id}, ac_number: {ac_number}")
             return
         except FileNotFoundError:
             print(f"FileNotFoundError search_value: {ac_number}")

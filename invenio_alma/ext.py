@@ -25,7 +25,7 @@ class InvenioAlma:
         self.init_services(app)
         app.extensions["invenio-alma"] = self
 
-    def init_config(self, app):  # pylint: disable=no-self-use
+    def init_config(self, app):
         """Initialize configuration."""
         for k in dir(config):
             if k.startswith("INVENIO_ALMA_"):

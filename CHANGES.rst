@@ -7,6 +7,12 @@
 Changes
 =======
 
+Version v0.4.4 (release 2022-08-03)
+
+- improve duplicate output by adding the repository id
+- fix RequestError problem, by handling the error
+
+
 Version v0.4.3 (release 2022-08-02)
 
 - add ac number to the success output

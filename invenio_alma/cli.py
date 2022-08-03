@@ -37,9 +37,9 @@ from .utils import create_record, get_identity_from_user_by_email
 class DuplicateRecordError(Exception):
     """Duplicate Record Exception."""
 
-    def __init__(self, ac_number):
+    def __init__(self, ac_number, id_):
         """Constructor for class DuplicateRecordException."""
-        msg = f"ac_number: {ac_number} already exists in the database"
+        msg = f"ac_number: {ac_number} already exists (id={id_}) in the database"
         super().__init__(msg)
 
 
@@ -94,7 +94,7 @@ def check_about_duplicate(ac_number):
     results = search.execute()
 
     if len(results) > 0:
-        raise DuplicateRecordError(ac_number=ac_number)
+        raise DuplicateRecordError(ac_number=ac_number, id_=results[0]["id"])
 
 
 def handle_csv(alma_sru_service, csv_file, identity):

@@ -16,7 +16,7 @@ from time import sleep
 
 import click
 from click_option_group import optgroup
-from elasticsearch import ConnectionTimeout
+from elasticsearch import ConnectionTimeout, RequestError
 from elasticsearch_dsl import Q
 from flask.cli import with_appcontext
 from invenio_records_marc21 import current_records_marc21
@@ -106,6 +106,7 @@ def handle_csv(alma_sru_service, csv_file, identity):
         handle_single_import(alma_sru_service, **row, identity=identity)
 
 
+# pylint: disable-next=too-many-return-statements)
 def handle_single_import(
     alma_sru_service, ac_number, file_path, identity, marcid=None, **_
 ):
@@ -134,6 +135,9 @@ def handle_single_import(
             return
         except ValidationError:
             print(f"ValidationError   search_value: {ac_number}")
+            return
+        except RequestError:
+            print(f"RequestError      search_value: {ac_number}")
             return
         except ConnectionTimeout:
             msg = f"ConnectionTimeout search_value: {ac_number}, retry_counter: {retry_counter}"

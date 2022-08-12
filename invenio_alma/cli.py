@@ -39,7 +39,7 @@ class DuplicateRecordError(Exception):
 
     def __init__(self, ac_number, id_):
         """Constructor for class DuplicateRecordException."""
-        msg = f"ac_number: {ac_number} already exists (id={id_}) in the database"
+        msg = f"DuplicateRecordError ac_number: {ac_number} already exists id={id_} in the database"
         super().__init__(msg)
 
 

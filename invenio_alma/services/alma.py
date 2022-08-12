@@ -119,7 +119,7 @@ class AlmaAPIBase:
 
         if len(bibs) == 0:
             msg = f"xpath: {self.xpath_to_records} does not find records."
-            raise AlmaAPIError(msg=msg)
+            raise AlmaAPIError(code="500", msg=msg)
 
         return bibs
 

@@ -132,7 +132,7 @@ class AlmaAPIBase:
 
         :return str: response content
         """
-        response = requests.get(url, headers=self.headers)
+        response = requests.get(url, headers=self.headers, timeout=10)
         if response.status_code >= 400:
             raise AlmaAPIError(code=response.status_code, msg=response.text)
         return self.extract_alma_records(response.text)
@@ -155,7 +155,7 @@ class AlmaREST(AlmaAPIBase):
 
         :return str: response content
         """
-        response = requests.put(url, data, headers=self.headers)
+        response = requests.put(url, data, headers=self.headers, timeout=10)
         if response.status_code >= 400:
             raise AlmaRESTError(code=response.status_code, msg=response.text)
         return response.text

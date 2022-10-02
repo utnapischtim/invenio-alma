@@ -16,13 +16,12 @@ from time import sleep
 
 import click
 from click_option_group import optgroup
-from elasticsearch import ConnectionTimeout, RequestError
-from elasticsearch_dsl import Q
 from flask.cli import with_appcontext
 from invenio_records_marc21 import current_records_marc21
 from invenio_records_marc21.records.systemfields import MarcDraftProvider
 from invenio_records_marc21.services.record.metadata import Marc21Metadata
 from invenio_search import RecordsSearch
+from invenio_search.engine import dsl
 from marshmallow.exceptions import ValidationError
 from sqlalchemy.orm.exc import StaleDataError
 
@@ -90,7 +89,7 @@ class CSV(click.ParamType):
 def check_about_duplicate(ac_number):
     """Check if the record with the ac number is already within the database."""
     search = RecordsSearch(index="marc21records-marc21")
-    search.query = Q("match", **{"metadata.fields.009": ac_number})
+    search.query = dsl.Q("match", **{"metadata.fields.009": ac_number})
     results = search.execute()
 
     if len(results) > 0:
@@ -136,10 +135,10 @@ def handle_single_import(
         except ValidationError:
             print(f"ValidationError   search_value: {ac_number}")
             return
-        except RequestError:
+        except dsl.RequestError:
             print(f"RequestError      search_value: {ac_number}")
             return
-        except ConnectionTimeout:
+        except dsl.ConnectionTimeout:
             msg = f"ConnectionTimeout search_value: {ac_number}, retry_counter: {retry_counter}"
             print(msg)
 

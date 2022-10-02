@@ -7,6 +7,18 @@
 Changes
 =======
 
+Version v0.5.0 (release 2022-10-02)
+
+- change: add timeout to requests.(get|put)
+- fix: invenio_search.engine hides used search tool
+- global: add supported python versions
+- global: move to reusable workflows
+- global: migrate from elasticsearch to opensearch
+- fix AlmaAPIError missing paramete use
+- harmonize the alma service error messages
+- use for duplicate error message same structure as for the others
+
+
 Version v0.4.4 (release 2022-08-03)
 
 - improve duplicate output by adding the repository id

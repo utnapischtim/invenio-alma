@@ -7,6 +7,12 @@
 Changes
 =======
 
+Version v0.6.0 (release 2022-10-17)
+
+- global: migrate to reusable workflows
+- setup: migrate to opensearch2
+
+
 Version v0.5.0 (release 2022-10-02)
 
 - change: add timeout to requests.(get|put)

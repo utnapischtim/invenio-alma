@@ -9,17 +9,19 @@
 
 import sys
 from csv import DictReader
-
-# import logging
 from os.path import isfile
 from time import sleep
 
 import click
 from click_option_group import optgroup
 from flask.cli import with_appcontext
-from invenio_records_marc21 import current_records_marc21
-from invenio_records_marc21.records.systemfields import MarcDraftProvider
-from invenio_records_marc21.services.record.metadata import Marc21Metadata
+from invenio_config_tugraz import get_identity_from_user_by_email
+from invenio_records_marc21 import (
+    Marc21Metadata,
+    MarcDraftProvider,
+    create_record,
+    current_records_marc21,
+)
 from invenio_search import RecordsSearch
 from invenio_search.engine import dsl
 from marshmallow.exceptions import ValidationError
@@ -27,10 +29,6 @@ from sqlalchemy.orm.exc import StaleDataError
 
 from .proxies import current_alma
 from .services import AlmaSRUService
-from .utils import create_record, get_identity_from_user_by_email
-
-# logging.basicConfig()
-# logging.getLogger("sqlalchemy.engine").setLevel(logging.INFO)
 
 
 class DuplicateRecordError(Exception):
@@ -113,13 +111,15 @@ def handle_single_import(
     if marcid:
         MarcDraftProvider.predefined_pid_value = marcid
 
+    service = current_records_marc21.records_service
+
     retry_counter = 0
     while True:
         try:
             check_about_duplicate(ac_number)
 
             marc21_record = Marc21Metadata(alma_sru_service.get_record(ac_number))
-            record = create_record(marc21_record, file_path, identity)
+            record = create_record(service, marc21_record, file_path, identity)
 
             print(f"record.id: {record.id}, ac_number: {ac_number}")
             return

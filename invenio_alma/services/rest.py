@@ -6,20 +6,15 @@
 # under the terms of the MIT License; see LICENSE file for more details.
 
 
-"""Alma Service."""
+"""Alma REST Service."""
 
-import requests
-from lxml.etree import fromstring, tostring
+from lxml.etree import tostring
+from requests import post, put
 
-from .config import AlmaRESTConfig, AlmaSRUConfig
-from .errors import AlmaAPIError, AlmaRESTError
-
-
-# pylint: disable-next=unused-argument
-def jpath_to_xpath(field_json_path):
-    """Convert json path to xpath."""
-    # TODO
-    return ""
+from .base import AlmaAPIBase
+from .config import AlmaRESTConfig
+from .errors import AlmaRESTError
+from .utils import jpath_to_xpath
 
 
 class AlmaRESTUrls:
@@ -52,90 +47,12 @@ class AlmaRESTUrls:
         """
         return f"{self.base_url}/{mms_id}?apikey={self.config.api_key}"
 
+    def url_post(self):
+        """Alma rest api post record url.
 
-class AlmaSRUUrls:
-    """Alma SRU urls."""
-
-    def __init__(self, config):
-        """Constructor for Alma SRU urls."""
-        self.config = config
-        self.search_value = ""
-
-    @property
-    def base_url(self):
-        """Base url."""
-        return f"https://{self.config.domain}/view/sru/{self.config.institution_code}"
-
-    @property
-    def query(self):
-        """Query."""
-        return f"query=alma.{self.config.search_key}={self.search_value}"
-
-    @property
-    def parameters(self):
-        """Parameters."""
-        return f"version=1.2&operation=searchRetrieve&{self.query}"
-
-    def url(self, search_value):
-        """Alma sru url to retrieve record by search value."""
-        self.search_value = search_value
-        return f"{self.base_url}?{self.parameters}"
-
-
-class AlmaAPIBase:
-    """Alma remote base service."""
-
-    def __init__(self, xpath_to_records, namespaces=None):
-        """Constructor alma api base service."""
-        self.xpath_to_records = xpath_to_records
-        self.namespaces = namespaces if namespaces else {}
-
-    @property
-    def headers(self):
-        """Headers."""
-        return {
-            "content-type": "application/xml",
-            "accept": "application/xml",
-        }
-
-    @staticmethod
-    def parse_alma_record(data):
-        """Parse Alma record."""
-        data = data.encode("utf-8")
-
-        return fromstring(data)
-
-    def extract_alma_records(self, data):
-        """Extract record from request.
-
-        :param data (str): result list
-
-        :return lxml.Element: extracted record
+        :return str: alma api url.
         """
-        record = self.parse_alma_record(data)
-
-        # extract single record
-        bibs = record.xpath(self.xpath_to_records, namespaces=self.namespaces)
-
-        if len(bibs) == 0:
-            msg = f"xpath: {self.xpath_to_records} does not find records."
-            raise AlmaAPIError(code="500", msg=msg)
-
-        return bibs
-
-    def get(self, url):
-        """Alma base api get request.
-
-        :param url (str): url to api
-
-        :raises AlmaRESTError if request was not successful
-
-        :return str: response content
-        """
-        response = requests.get(url, headers=self.headers, timeout=10)
-        if response.status_code >= 400:
-            raise AlmaAPIError(code=response.status_code, msg=response.text)
-        return self.extract_alma_records(response.text)
+        return f"{self.base_url}"
 
 
 class AlmaREST(AlmaAPIBase):
@@ -155,22 +72,25 @@ class AlmaREST(AlmaAPIBase):
 
         :return str: response content
         """
-        response = requests.put(url, data, headers=self.headers, timeout=10)
+        response = put(url, data, headers=self.headers, timeout=10)
         if response.status_code >= 400:
             raise AlmaRESTError(code=response.status_code, msg=response.text)
         return response.text
 
+    def post(self, url, data):
+        """Alma rest api post request.
 
-class AlmaSRU(AlmaAPIBase):
-    """Alma SRU Service class."""
+        :param url (str): url to api_host
+        :param data (str): payload
 
-    def __init__(self):
-        """Constructor alma sru service."""
-        namespaces = {
-            "srw": "http://www.loc.gov/zing/srw/",
-            "slim": "http://www.loc.gov/MARC21/slim",
-        }
-        super().__init__(".//srw:recordData/slim:record", namespaces)
+        :raises AlmaRESTError if request was not successful
+
+        :return str: response content
+        """
+        response = post(url, data, headers=self.headers, timeout=10)
+        if response.status_code >= 400:
+            raise AlmaRESTError(code=response.status_code, msg=response.text)
+        return response.text
 
 
 class AlmaRESTService:
@@ -224,6 +144,11 @@ class AlmaRESTService:
         url_put = self.urls.url_put(mms_id)
         self.service.put(url_put, data)
 
+    def create_alma_record(self, record):
+        data = tostring(record)
+        url_post = self.urls.url_post()
+        self.service.post(url_post, data)
+
     def update_field(
         self,
         mms_id,
@@ -238,29 +163,6 @@ class AlmaRESTService:
         self.replace_field(field, new_subfield_value, new_subfield_template)  # in-place
         self.update_alma_record(mms_id, record)
 
-
-class AlmaSRUService:
-    """AlmaSRUService."""
-
-    def __init__(self, config, urls, service):
-        """Constructor for AlmaService."""
-        self.config = config
-        self.urls = urls
-        self.service = service
-
-    @classmethod
-    def build(
-        cls, search_key, domain, institution_code, config=None, urls=None, service=None
-    ):
-        """Build sru service."""
-        config = (
-            config if config else AlmaSRUConfig(search_key, domain, institution_code)
-        )
-        urls = urls if urls else AlmaSRUUrls(config)
-        service = service if service else AlmaSRU()
-        return cls(config, urls, service)
-
-    def get_record(self, ac_number):
-        """Get the record."""
-        url = self.urls.url(ac_number)
-        return self.service.get(url)
+    def create_record(self, record):
+        """Create record in Alma."""
+        self.create_alma_record(record)

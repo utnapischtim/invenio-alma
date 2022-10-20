@@ -5,12 +5,11 @@
 # invenio-alma is free software; you can redistribute it and/or modify it
 # under the terms of the MIT License; see LICENSE file for more details.
 
-"""Invenio service to connect InvenioRDM to Alma."""
+"""Alma utils."""
 
-from .rest import AlmaRESTService
-from .sru import AlmaSRUService
 
-__all__ = (
-    "AlmaRESTService",
-    "AlmaSRUService",
-)
+# pylint: disable-next=unused-argument
+def jpath_to_xpath(field_json_path):
+    """Convert json path to xpath."""
+    # TODO
+    return ""

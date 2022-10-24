@@ -14,7 +14,7 @@ from time import sleep
 
 import click
 from click_option_group import optgroup
-from flask.cli import with_appcontext
+from flask.cli import current_app, with_appcontext
 from invenio_config_tugraz import get_identity_from_user_by_email
 from invenio_records_marc21 import (
     Marc21Metadata,
@@ -243,8 +243,11 @@ def create():
 
 
 @create.command("alma-record")
+@with_appcontext
 @click.option("--marc-id", type=click.STRING, required=True)
-def create_alma_record(marc_id):
+@click.option("--user-email", type=click.STRING, default="alma@tugraz.at")
+@click.option("--api-key", type=click.STRING, required=True)
+def create_alma_record(marc_id, user_email, api_key):
     """Create alma record."""
     # TODO:
     # create a record within alma from an existing repository record with the
@@ -252,12 +255,18 @@ def create_alma_record(marc_id):
     # use service provided by invenio-records-marc21 to get the record. current
     # package should not write a service for the marc21 datamodel
 
-    # SKETCH:
-    record = current_records_marc21.record_service.get_record(marc_id, type_="marcxml")
-    mms_id = current_alma.alma_rest_service.create_record(record)
-    # DISCUSS:
-    # "035...a" vs "035. . .a" vs "035._._.a"
-    current_records_marc21.record_service.add_field(marc_id, "035._._.a", mms_id)
+    # current_app.config["INVENIO_ALMA_API_KEY"] = api_key
+
+    current_alma.alma_rest_service.config.api_key = api_key
+
+    identity = get_identity_from_user_by_email(email=user_email)
+    record = current_records_marc21.records_service.read(identity, marc_id)
+
+    marc21_record = Marc21Metadata(json=record.to_dict()["metadata"])
+
+    k = current_alma.alma_rest_service.create_record(marc21_record.etree)
+
+    print(k)
 
 
 @create.command("repository-record")

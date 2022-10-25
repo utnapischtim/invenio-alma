@@ -295,3 +295,32 @@ def create_repository_record(mms_id):  # pylint: disable=unused-argument
     # massage data to move 001 mms-id to 035__a (tugraz)mms-id
 
     # current_records_marc21.record_service.create_record()
+
+
+@alma.group()
+def update():
+    """Alma update group."""
+
+
+@update.command("repository-record")
+@with_appcontext
+@click.option("--mms-id", type=click.STRING, required=True)
+# TODO marc-id should be optional. the mms-id could be already stored into the metadata
+@click.option("--marc-id", type=click.STRING, required=True)
+@click.option("--user-email", type=click.STRING, default="alma@tugraz.at")
+@click.option("--api-key", type=click.STRING, required=True)
+def update_repository_record(mms_id, marc_id, user_email, api_key):
+    """Update Repository record."""
+    current_alma.alma_rest_service.config.api_key = api_key
+
+    identity = get_identity_from_user_by_email(email=user_email)
+    marc21_etree = current_alma.alma_rest_service.get_record(mms_id)
+
+    marc21_record_from_alma = Marc21Metadata(metadata=marc21_etree)
+
+    records_service = current_records_marc21.records_service
+    records_service.edit(id_=marc_id, identity=identity)
+    records_service.update_draft(
+        id_=marc_id, identity=identity, metadata=marc21_record_from_alma
+    )
+    records_service.publish(id_=marc_id, identity=identity)

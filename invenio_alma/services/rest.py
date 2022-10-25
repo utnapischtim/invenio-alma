@@ -151,7 +151,7 @@ class AlmaRESTService:
 
         data = tostring(bib)
         url_post = self.urls.url_post()
-        self.service.post(url_post, data)
+        return self.service.post(url_post, data)
 
     def update_field(
         self,
@@ -169,4 +169,4 @@ class AlmaRESTService:
 
     def create_record(self, record):
         """Create record in Alma."""
-        self.create_alma_record(record)
+        return self.create_alma_record(record)

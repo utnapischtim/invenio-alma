@@ -11,10 +11,11 @@ import sys
 from csv import DictReader
 from os.path import isfile
 from time import sleep
+from xml.etree.ElementTree import fromstring
 
 import click
 from click_option_group import optgroup
-from flask.cli import current_app, with_appcontext
+from flask.cli import with_appcontext
 from invenio_config_tugraz import get_identity_from_user_by_email
 from invenio_records_marc21 import (
     Marc21Metadata,
@@ -264,9 +265,17 @@ def create_alma_record(marc_id, user_email, api_key):
 
     marc21_record = Marc21Metadata(json=record.to_dict()["metadata"])
 
-    k = current_alma.alma_rest_service.create_record(marc21_record.etree)
+    marc21_xml = current_alma.alma_rest_service.create_record(marc21_record.etree)
+    marc21_etree = fromstring(marc21_xml)
 
-    print(k)
+    marc21_record_from_alma = Marc21Metadata(metadata=marc21_etree.find("record"))
+
+    records_service = current_records_marc21.records_service
+    records_service.edit(id_=marc_id, identity=identity)
+    records_service.update_draft(
+        id_=marc_id, identity=identity, metadata=marc21_record_from_alma
+    )
+    records_service.publish(id_=marc_id, identity=identity)
 
 
 @create.command("repository-record")

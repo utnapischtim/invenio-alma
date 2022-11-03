@@ -11,10 +11,9 @@ import sys
 from csv import DictReader
 from os.path import isfile
 from time import sleep
-from xml.etree.ElementTree import fromstring
 
 import click
-from click_option_group import optgroup
+from click_option_group import RequiredMutuallyExclusiveOptionGroup, optgroup
 from flask.cli import with_appcontext
 from invenio_config_tugraz import get_identity_from_user_by_email
 from invenio_records_marc21 import (
@@ -30,6 +29,9 @@ from sqlalchemy.orm.exc import StaleDataError
 
 from .proxies import current_alma
 from .services import AlmaSRUService
+from .utils import create_alma_record as _create_alma_record
+from .utils import preliminaries
+from .utils import update_repository_record as _update_repository_record
 
 
 class DuplicateRecordError(Exception):
@@ -250,32 +252,12 @@ def create():
 @click.option("--api-key", type=click.STRING, required=True)
 def create_alma_record(marc_id, user_email, api_key):
     """Create alma record."""
-    # TODO:
-    # create a record within alma from an existing repository record with the
-    # marcid=[MARCID]
-    # use service provided by invenio-records-marc21 to get the record. current
-    # package should not write a service for the marc21 datamodel
 
-    # current_app.config["INVENIO_ALMA_API_KEY"] = api_key
+    records_service, alma_service, identity = preliminaries(user_email, use_rest=True)
 
-    current_alma.alma_rest_service.config.api_key = api_key
+    alma_service.config.api_key = api_key
 
-    identity = get_identity_from_user_by_email(email=user_email)
-    record = current_records_marc21.records_service.read(identity, marc_id)
-
-    marc21_record = Marc21Metadata(json=record.to_dict()["metadata"])
-
-    marc21_xml = current_alma.alma_rest_service.create_record(marc21_record.etree)
-    marc21_etree = fromstring(marc21_xml)
-
-    marc21_record_from_alma = Marc21Metadata(metadata=marc21_etree.find("record"))
-
-    records_service = current_records_marc21.records_service
-    records_service.edit(id_=marc_id, identity=identity)
-    records_service.update_draft(
-        id_=marc_id, identity=identity, metadata=marc21_record_from_alma
-    )
-    records_service.publish(id_=marc_id, identity=identity)
+    _create_alma_record(records_service, alma_service, identity, marc_id)
 
 
 @create.command("repository-record")
@@ -304,23 +286,30 @@ def update():
 
 @update.command("repository-record")
 @with_appcontext
-@click.option("--mms-id", type=click.STRING, required=True)
-# TODO marc-id should be optional. the mms-id could be already stored into the metadata
 @click.option("--marc-id", type=click.STRING, required=True)
 @click.option("--user-email", type=click.STRING, default="alma@tugraz.at")
 @click.option("--api-key", type=click.STRING, required=True)
-def update_repository_record(mms_id, marc_id, user_email, api_key):
+@optgroup.group("Alma identifier", cls=RequiredMutuallyExclusiveOptionGroup)
+@optgroup.option("--mms-id", type=click.STRING, help="mms-id", default=None)
+@optgroup.option("--thesis-id", type=click.STRING, help="thesis-id", default=None)
+def update_repository_record(marc_id, user_email, api_key, mms_id, thesis_id):
     """Update Repository record."""
-    current_alma.alma_rest_service.config.api_key = api_key
 
-    identity = get_identity_from_user_by_email(email=user_email)
-    marc21_etree = current_alma.alma_rest_service.get_record(mms_id)
+    if mms_id:
+        use_rest = True
+        alma_thesis_id = mms_id
+    elif thesis_id:
+        use_sru = True
+        alma_thesis_id = thesis_id
+    else:
+        raise RuntimeError("Neither of mms_id and thesis_id were given.")
 
-    marc21_record_from_alma = Marc21Metadata(metadata=marc21_etree)
-
-    records_service = current_records_marc21.records_service
-    records_service.edit(id_=marc_id, identity=identity)
-    records_service.update_draft(
-        id_=marc_id, identity=identity, metadata=marc21_record_from_alma
+    records_service, alma_service, identity = preliminaries(
+        user_email, use_rest=use_rest, use_sru=use_sru
     )
-    records_service.publish(id_=marc_id, identity=identity)
+
+    alma_service.config.api_key = api_key
+
+    _update_repository_record(
+        records_service, alma_service, marc_id, identity, alma_thesis_id
+    )

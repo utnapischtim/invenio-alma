@@ -7,29 +7,35 @@
 
 """Celery Tasks for invenio-alma."""
 
-import traceback
-
 from celery import shared_task
 from flask import current_app
 from flask_mail import Message
 
 from .utils import (
-    calculate_to_create_alma_records,
-    calculate_to_update_repository_records,
+    apply_aggregators,
     create_alma_record,
     preliminaries,
     update_repository_record,
 )
 
 
+def config_variables():
+    """Configuration variables."""
+    user_email = current_app.config["ALMA_USER_EMAIL"]
+    api_key = current_app.config["ALMA_API_KEY"]
+    sender = current_app.config["ALMA_ERROR_MAIL_SENDER"]
+    recipients = ",".join(current_app.config["ALMA_ERROR_MAIL_RECIPIENTS"])
+
+    return user_email, api_key, sender, recipients
+
+
 @shared_task(ignore_result=True)
 def create_alma_records():
     """Create records within alma from repository records."""
-    user_email = current_app.config["INVENIO_ALMA_USER_EMAIL"]
-    api_key = current_app.config["INVENIO_ALMA_API_KEY"]
-    aggregators = current_app.config["INVENIO_ALMA_ALMA_RECORDS_CREATE_AGGREGATORS"]
+    user_email, api_key, sender, recipients = config_variables()
+    aggregators = current_app.config["ALMA_ALMA_RECORDS_CREATE_AGGREGATORS"]
 
-    marc_ids = calculate_to_create_alma_records(aggregators)
+    marc_ids = apply_aggregators(aggregators)
     records_service, alma_service, identity = preliminaries(user_email)
 
     alma_service.config.api_key = api_key
@@ -39,10 +45,10 @@ def create_alma_records():
             create_alma_record(records_service, alma_service, identity, marc_id)
         except Exception:
             msg = Message(
-                "Something went wrong when creating the alma record.",
-                sender=current_app.config["INVENIO_ALMA_ERROR_MAIL_SENDER"],
-                recipients=current_app.config["INVENIO_ALMA_ERROR_MAIL_RECIPIENTS"],
-                body=traceback.format_exc(),
+                "ERROR: creating record in alma.",
+                sender=sender,
+                recipients=recipients,
+                body=f"marc_id: {marc_id}",
             )
             current_app.extensions["mail"].send(msg)
 
@@ -50,13 +56,10 @@ def create_alma_records():
 @shared_task(ignore_result=True)
 def update_repository_records():
     """Update records within the repository from alma records."""
-    user_email = current_app.config["INVENIO_ALMA_USER_EMAIL"]
-    api_key = current_app.config["INVENIO_ALMA_API_KEY"]
-    aggregators = current_app.config[
-        "INVENIO_ALMA_REPOSITORY_RECORDS_UPDATE_AGGREGATORS"
-    ]
+    user_email, api_key, sender, recipients = config_variables()
+    aggregators = current_app.config["ALMA_REPOSITORY_RECORDS_UPDATE_AGGREGATORS"]
 
-    records = calculate_to_update_repository_records(aggregators)
+    records = apply_aggregators(aggregators)
     records_service, alma_service, identity = preliminaries(user_email, use_sru=True)
 
     alma_service.config.api_key = api_key
@@ -68,9 +71,9 @@ def update_repository_records():
             )
         except Exception:
             msg = Message(
-                "Something went wrong when updating records.",
-                sender=current_app.config["INVENIO_ALMA_ERROR_MAIL_SENDER"],
-                recipients=current_app.config["INVENIO_ALMA_ERROR_MAIL_RECIPIENTS"],
-                body=traceback.format_exc(),
+                "ERROR: updating records within the repository.",
+                sender=sender,
+                recipients=recipients,
+                body=f"marc21_id: {marc_id}, alma_id: {alma_id}",
             )
             current_app.extensions["mail"].send(msg)

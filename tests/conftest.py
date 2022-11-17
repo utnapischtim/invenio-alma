@@ -24,6 +24,8 @@ def create_app(instance_path):
     def factory(**config):
         app = Flask("testapp", instance_path=instance_path)
         app.config.update(**config)
+        app.config["ALMA_API_KEY"] = "test-token"
+        app.config["ALMA_API_HOST"] = "test-host"
         InvenioAlma(app)
         return app
 

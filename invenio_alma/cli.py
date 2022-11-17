@@ -74,7 +74,6 @@ def create():
 @click.option("--api-key", type=click.STRING, required=True)
 def cli_create_alma_record(marc_id, user_email, api_key):
     """Create alma record."""
-
     records_service, alma_service, identity = preliminaries(user_email, use_rest=True)
 
     alma_service.config.api_key = api_key
@@ -116,7 +115,6 @@ def update():
 @optgroup.option("--thesis-id", type=click.STRING, help="thesis-id", default=None)
 def cli_update_repository_record(marc_id, user_email, api_key, mms_id, thesis_id):
     """Update Repository record."""
-
     if mms_id:
         use_rest = True
         alma_thesis_id = mms_id

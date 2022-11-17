@@ -146,6 +146,7 @@ class AlmaRESTService:
         self.service.put(url_put, data)
 
     def create_alma_record(self, record):
+        """Create alma record."""
         bib = Element("bib")
         bib.append(record)
 

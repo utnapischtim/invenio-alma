@@ -12,7 +12,7 @@ ALMA_API_KEY = ""
     NZ & IZ linked records needs special permissions and only 98X fields can be changed.
 """
 
-ALMA_API_HOST = "api-eu.hosted.exlibrisgroup.com"
+ALMA_API_HOST = ""
 """Default value for the Alma API host."""
 
 ALMA_ALMA_RECORDS_CREATE_AGGREGATORS = []

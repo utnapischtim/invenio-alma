@@ -20,10 +20,16 @@ def test_version():
 def test_init():
     """Test extension initialization."""
     app = Flask("testapp")
+    app.config["ALMA_API_KEY"] = "test-token"
+    app.config["ALMA_API_HOST"] = "test-host"
+
     ext = InvenioAlma(app)
     assert "invenio-alma" in app.extensions
 
     app = Flask("testapp")
+    app.config["ALMA_API_KEY"] = "test-token"
+    app.config["ALMA_API_HOST"] = "test-host"
+
     ext = InvenioAlma()
     assert "invenio-alma" not in app.extensions
 

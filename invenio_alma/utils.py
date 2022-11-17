@@ -31,8 +31,8 @@ def preliminaries(user_email, *, use_rest=False, use_sru=False):
 
 
 def apply_aggregators(aggregators):
-    """Apply aggregators"""
-
+    """Apply aggregators."""
+    # pylint: disable=invalid-name
     def fn(accumulator, aggregator):
         return accumulator + aggregator()
 

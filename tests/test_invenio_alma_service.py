@@ -7,8 +7,8 @@
 
 """Test Alma Services."""
 
-from invenio_alma.services.alma import AlmaRESTUrls, AlmaSRUUrls
-from invenio_alma.services.config import AlmaRESTConfig, AlmaSRUConfig
+from invenio_alma.services.rest import AlmaRESTConfig, AlmaRESTUrls
+from invenio_alma.services.sru import AlmaSRUConfig, AlmaSRUUrls
 
 
 def test_alma_rest_urls():

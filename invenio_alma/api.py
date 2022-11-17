@@ -24,10 +24,10 @@ from sqlalchemy.orm.exc import StaleDataError
 
 def create_alma_record(records_service, alma_service, identity, marc_id):
     """Create alma record."""
-
     record = records_service.read(identity, marc_id)
     marc21_record = Marc21Metadata(json=record.to_dict()["metadata"])
-    marc21_xml = alma_service.create_record(marc21_record.etree)
+    # pylint: disable=unused-variable
+    response = alma_service.create_record(marc21_record.etree)
 
     # TODO: check about errors!
 
@@ -36,7 +36,6 @@ def update_repository_record(
     records_service, alma_service, marc_id, identity, alma_thesis_id
 ):
     """Update repository record fetched from alma."""
-
     marc21_etree = alma_service.get_record(alma_thesis_id)
     marc21_record_from_alma = Marc21Metadata(metadata=marc21_etree)
 

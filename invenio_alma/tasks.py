@@ -11,12 +11,8 @@ from celery import shared_task
 from flask import current_app
 from flask_mail import Message
 
-from .utils import (
-    apply_aggregators,
-    create_alma_record,
-    preliminaries,
-    update_repository_record,
-)
+from .api import create_alma_record, update_repository_record
+from .utils import apply_aggregators, preliminaries
 
 
 def config_variables():
@@ -43,6 +39,7 @@ def create_alma_records():
     for marc_id in marc_ids:
         try:
             create_alma_record(records_service, alma_service, identity, marc_id)
+        # pylint: disable=broad-except
         except Exception:
             msg = Message(
                 "ERROR: creating record in alma.",
@@ -69,6 +66,7 @@ def update_repository_records():
             update_repository_record(
                 records_service, alma_service, marc_id, identity, alma_id
             )
+        # pylint: disable=broad-except
         except Exception:
             msg = Message(
                 "ERROR: updating records within the repository.",

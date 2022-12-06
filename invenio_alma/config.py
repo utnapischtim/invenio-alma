@@ -32,3 +32,12 @@ ALMA_ERROR_MAIL_RECIPIENTS = []
 
 ALMA_CELERY_BEAT_SCHEDULE = {}
 """Celery beat schedule for the theses import."""
+
+ALMA_SRU_SEARCH_KEY = ""
+"""Search key to search on SRU."""
+
+ALMA_SRU_DOMAIN = ""
+"""SRU domain."""
+
+ALMA_SRU_INSTITUTION_CODE = ""
+"""SRU institution code."""

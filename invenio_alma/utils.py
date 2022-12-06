@@ -23,7 +23,7 @@ def preliminaries(user_email, *, use_rest=False, use_sru=False):
     elif use_sru:
         alma_service = current_alma.alma_sru_service
     else:
-        raise RuntimeError("Neither of mms_id and thesis_id were given.")
+        raise RuntimeError("choose between using rest or sru.")
 
     identity = get_identity_from_user_by_email(email=user_email)
 

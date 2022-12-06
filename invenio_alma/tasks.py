@@ -32,11 +32,10 @@ def create_alma_records():
     aggregators = current_app.config["ALMA_ALMA_RECORDS_CREATE_AGGREGATORS"]
 
     marc_ids = apply_aggregators(aggregators)
-    records_service, alma_service, identity = preliminaries(user_email)
-
-    alma_service.config.api_key = api_key
+    records_service, alma_service, identity = preliminaries(user_email, use_rest=True)
 
     for marc_id in marc_ids:
+
         try:
             create_alma_record(records_service, alma_service, identity, marc_id)
         # pylint: disable=broad-except

@@ -34,17 +34,16 @@ def create_alma_records():
     marc_ids = apply_aggregators(aggregators)
     records_service, alma_service, identity = preliminaries(user_email, use_rest=True)
 
-    for marc_id in marc_ids:
-
+    for marc_id, cms_id in marc_ids:
         try:
-            create_alma_record(records_service, alma_service, identity, marc_id)
+            create_alma_record(records_service, alma_service, identity, marc_id, cms_id)
         # pylint: disable=broad-except
-        except Exception:
+        except Exception as e:
             msg = Message(
                 "ERROR: creating record in alma.",
                 sender=sender,
                 recipients=recipients,
-                body=f"marc_id: {marc_id}",
+                body=f"e: {e}, marc_id: {marc_id}",
             )
             current_app.extensions["mail"].send(msg)
 

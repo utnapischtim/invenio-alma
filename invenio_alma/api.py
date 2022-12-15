@@ -21,11 +21,17 @@ from invenio_search.engine import dsl
 from marshmallow.exceptions import ValidationError
 from sqlalchemy.orm.exc import StaleDataError
 
+from .utils import is_alma_duplicate_check
 
-def create_alma_record(records_service, alma_service, identity, marc_id):
+
+def create_alma_record(records_service, alma_service, identity, marc_id, cms_id):
     """Create alma record."""
-    record = records_service.read(identity, marc_id)
+    record = records_service.read_draft(identity, marc_id)
     marc21_record = Marc21Metadata(json=record.to_dict()["metadata"])
+
+    if is_alma_duplicate_check(cms_id):
+        return
+
     # pylint: disable=unused-variable
     response = alma_service.create_record(marc21_record.etree)
 

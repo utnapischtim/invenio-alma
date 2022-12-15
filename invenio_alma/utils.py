@@ -9,10 +9,23 @@
 
 import functools
 
+from flask import current_app
 from invenio_config_tugraz import get_identity_from_user_by_email
 from invenio_records_marc21 import current_records_marc21
 
 from .proxies import current_alma
+from .services.sru import AlmaSRUService
+
+
+def is_alma_duplicate_check(cms_id):
+    """Check if there is already a record in alma."""
+    search_key = "local_field_995"
+    domain = current_app.config["ALMA_SRU_DOMAIN"]
+    institution_code = current_app.config["ALMA_SRU_INSTITUTION_CODE"]
+    sru_service = AlmaSRUService(search_key, domain, institution_code)
+
+    record = sru_service.get_record(cms_id)
+    return len(record.getchildren()) > 0
 
 
 def preliminaries(user_email, *, use_rest=False, use_sru=False):
@@ -21,7 +34,10 @@ def preliminaries(user_email, *, use_rest=False, use_sru=False):
     if use_rest:
         alma_service = current_alma.alma_rest_service
     elif use_sru:
-        alma_service = current_alma.alma_sru_service
+        search_key = "local_field_995"
+        domain = current_app.config["ALMA_SRU_DOMAIN"]
+        institution_code = current_app.config["ALMA_SRU_INSTITUTION_CODE"]
+        alma_service = AlmaSRUService(search_key, domain, institution_code)
     else:
         raise RuntimeError("choose between using rest or sru.")
 

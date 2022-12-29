@@ -9,17 +9,28 @@
 
 ALMA_API_KEY = ""
 """Default value for the Alma API key.
-    NZ & IZ linked records needs special permissions and only 98X fields can be changed.
+
+The implemenation assumes that with the key it is only allowed to
+create records within Institution Zone (IZ). The Network Zone (NZ)
+would need higher permissions.
+
+With the IZ key it is only possible to change 98X fields within an
+existing record, but it is possible to create a totally new record.
+
+This value should be set on a place which is not under DVCS control.
 """
 
 ALMA_API_HOST = ""
-"""Default value for the Alma API host."""
+"""Default value for the Alma API host.
+
+This value should be set on a place which is not under DVCS control.
+"""
 
 ALMA_ALMA_RECORDS_CREATE_AGGREGATORS = []
-"""List of aggregators with following signature: aggregator() -> list(marc_id)."""
+"""List of aggregators with following signature: aggregator() -> list[marc_id]."""
 
 ALMA_REPOSITORY_RECORDS_UPDATE_AGGREGATORS = []
-"""List of aggregators with following signature: aggregator() -> list(tuple(marc_id, alma_id))."""
+"""List of aggregators with following signature: aggregator() -> list[tuple[marc_id, alma_id]]."""
 
 ALMA_USER_EMAIL = ""
 """This is the email adress of the alma user in the repository."""
@@ -31,10 +42,19 @@ ALMA_ERROR_MAIL_RECIPIENTS = []
 """This is a list of recipients who should get the error message."""
 
 ALMA_CELERY_BEAT_SCHEDULE = {}
-"""Celery beat schedule for the theses import."""
+"""Celery beat schedule for the theses import.
+
+This should be set on the InvenioRDM instance invenio.cfg file.
+"""
 
 ALMA_SRU_DOMAIN = ""
-"""SRU domain."""
+"""SRU domain.
+
+This is the domain of the institution Alma SRU service.
+"""
 
 ALMA_SRU_INSTITUTION_CODE = ""
-"""SRU institution code."""
+"""SRU institution code.
+
+This is the code that acts as a reference for the institution in Alma.
+"""

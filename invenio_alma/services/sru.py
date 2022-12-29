@@ -7,6 +7,7 @@
 
 
 """Alma SRU Service."""
+from xml.etree.ElementTree import Element
 
 from .base import AlmaAPIBase
 from .config import AlmaSRUConfig
@@ -15,27 +16,27 @@ from .config import AlmaSRUConfig
 class AlmaSRUUrls:
     """Alma SRU urls."""
 
-    def __init__(self, config):
+    def __init__(self, config: AlmaSRUConfig):
         """Constructor for Alma SRU urls."""
         self.config = config
         self.search_value = ""
 
     @property
-    def base_url(self):
+    def base_url(self) -> str:
         """Base url."""
         return f"https://{self.config.domain}/view/sru/{self.config.institution_code}"
 
     @property
-    def query(self):
+    def query(self) -> str:
         """Query."""
         return f"query=alma.{self.config.search_key}={self.search_value}"
 
     @property
-    def parameters(self):
+    def parameters(self) -> str:
         """Parameters."""
         return f"version=1.2&operation=searchRetrieve&{self.query}"
 
-    def url(self, search_value):
+    def url(self, search_value: str) -> str:
         """Alma sru url to retrieve record by search value."""
         self.search_value = search_value
         return f"{self.base_url}?{self.parameters}"
@@ -56,7 +57,7 @@ class AlmaSRU(AlmaAPIBase):
 class AlmaSRUService:
     """AlmaSRUService."""
 
-    def __init__(self, config, urls, service):
+    def __init__(self, config: AlmaSRUConfig, urls: AlmaSRUUrls, service: AlmaSRU):
         """Constructor for AlmaService."""
         self.config = config
         self.urls = urls
@@ -64,7 +65,13 @@ class AlmaSRUService:
 
     @classmethod
     def build(
-        cls, search_key, domain, institution_code, config=None, urls=None, service=None
+        cls,
+        search_key: str,
+        domain: str,
+        institution_code: str,
+        config: AlmaSRUConfig = None,
+        urls: AlmaSRUUrls = None,
+        service: AlmaSRU = None,
     ):
         """Build sru service."""
         config = (
@@ -74,7 +81,7 @@ class AlmaSRUService:
         service = service if service else AlmaSRU()
         return cls(config, urls, service)
 
-    def get_record(self, ac_number):
+    def get_record(self, ac_number: str) -> list[Element]:
         """Get the record."""
         url = self.urls.url(ac_number)
         return self.service.get(url)

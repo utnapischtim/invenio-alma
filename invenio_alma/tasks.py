@@ -37,7 +37,6 @@ def create_alma_records():
     for marc_id, cms_id in marc_ids:
         try:
             create_alma_record(records_service, alma_service, identity, marc_id, cms_id)
-        # pylint: disable=broad-except
         except Exception as e:
             msg = Message(
                 "ERROR: creating record in alma.",
@@ -64,12 +63,11 @@ def update_repository_records():
             update_repository_record(
                 records_service, alma_service, marc_id, identity, alma_id
             )
-        # pylint: disable=broad-except
-        except Exception:
+        except Exception as e:
             msg = Message(
                 "ERROR: updating records within the repository.",
                 sender=sender,
                 recipients=recipients,
-                body=f"marc21_id: {marc_id}, alma_id: {alma_id}",
+                body=f"e: {e}, marc21_id: {marc_id}, alma_id: {alma_id}",
             )
             current_app.extensions["mail"].send(msg)

@@ -7,10 +7,12 @@
 
 """Invenio service to connect InvenioRDM to Alma."""
 
+from .errors import AlmaRESTError
 from .rest import AlmaRESTService
 from .sru import AlmaSRUService
 
 __all__ = (
     "AlmaRESTService",
     "AlmaSRUService",
+    "AlmaRESTError",
 )

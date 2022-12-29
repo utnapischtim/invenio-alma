@@ -8,7 +8,8 @@
 
 """Alma Base Service."""
 
-from lxml.etree import fromstring
+from xml.etree.ElementTree import Element, fromstring
+
 from requests import get
 
 from .errors import AlmaAPIError
@@ -23,7 +24,7 @@ class AlmaAPIBase:
         self.namespaces = namespaces if namespaces else {}
 
     @property
-    def headers(self):
+    def headers(self) -> dict:
         """Headers."""
         return {
             "content-type": "application/xml",
@@ -31,13 +32,13 @@ class AlmaAPIBase:
         }
 
     @staticmethod
-    def parse_alma_record(data):
+    def parse_alma_record(data: str) -> Element:
         """Parse Alma record."""
         data = data.encode("utf-8")
 
         return fromstring(data)
 
-    def extract_alma_records(self, data):
+    def extract_alma_records(self, data: str) -> list[Element]:
         """Extract record from request.
 
         :param data (str): result list
@@ -55,7 +56,7 @@ class AlmaAPIBase:
 
         return bibs
 
-    def get(self, url):
+    def get(self, url: str) -> list[Element]:
         """Alma base api get request.
 
         :param url (str): url to api

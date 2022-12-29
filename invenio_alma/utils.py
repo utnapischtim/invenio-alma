@@ -8,6 +8,7 @@
 """Utils."""
 
 import functools
+from typing import Callable
 
 from flask import current_app
 from invenio_config_tugraz import get_identity_from_user_by_email
@@ -17,7 +18,7 @@ from .proxies import current_alma
 from .services.sru import AlmaSRUService
 
 
-def is_alma_duplicate_check(cms_id):
+def is_duplicate_in_alma(cms_id: str):
     """Check if there is already a record in alma."""
     search_key = "local_field_995"
     domain = current_app.config["ALMA_SRU_DOMAIN"]
@@ -28,7 +29,7 @@ def is_alma_duplicate_check(cms_id):
     return len(record.getchildren()) > 0
 
 
-def preliminaries(user_email, *, use_rest=False, use_sru=False):
+def preliminaries(user_email: str, *, use_rest=False, use_sru=False):
     """Preliminaries to interact with the repository."""
     records_service = current_records_marc21.records_service
     if use_rest:
@@ -46,7 +47,7 @@ def preliminaries(user_email, *, use_rest=False, use_sru=False):
     return records_service, alma_service, identity
 
 
-def apply_aggregators(aggregators):
+def apply_aggregators(aggregators: list[Callable[[], list]]) -> list:
     """Apply aggregators."""
     # pylint: disable=invalid-name
     def fn(accumulator, aggregator):

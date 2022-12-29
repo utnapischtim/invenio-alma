@@ -11,7 +11,7 @@
 class AlmaAPIError(Exception):
     """Alma API error class."""
 
-    def __init__(self, code, msg):
+    def __init__(self, code: int, msg: str):
         """Constructor for alma api error."""
         super().__init__(f"Alma API error code={code} msg='{msg}'")
 
@@ -19,7 +19,7 @@ class AlmaAPIError(Exception):
 class AlmaRESTError(Exception):
     """Alma Rest API error class."""
 
-    def __init__(self, code, msg):
+    def __init__(self, code: int, msg: str):
         """Constructor for alma rest error."""
         super().__init__(f"Alma REST error code={code} msg='{msg}'")
 
@@ -27,6 +27,6 @@ class AlmaRESTError(Exception):
 class AlmaSRUError(Exception):
     """Alma SRU error class."""
 
-    def __init__(self, code, msg):
+    def __init__(self, code: int, msg: str):
         """Constructor for alma sru error."""
         super().__init__(f"Alma SRU error code={code} msg='{msg}'")

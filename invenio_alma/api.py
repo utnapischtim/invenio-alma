@@ -7,13 +7,18 @@
 
 """API functions of the alma connector."""
 
+from csv import DictReader
 from time import sleep
 
+from flask import current_app
+from flask_principal import Identity
 from invenio_records_marc21 import (
     DuplicateRecordError,
     Marc21Metadata,
+    Marc21RecordService,
     MarcDraftProvider,
     check_about_duplicate,
+    convert_json_to_marc21xml,
     create_record,
     current_records_marc21,
 )
@@ -21,26 +26,42 @@ from invenio_search.engine import dsl
 from marshmallow.exceptions import ValidationError
 from sqlalchemy.orm.exc import StaleDataError
 
-from .utils import is_alma_duplicate_check
+from .services import AlmaRESTError, AlmaRESTService, AlmaSRUService
+from .utils import is_duplicate_in_alma
 
 
-def create_alma_record(records_service, alma_service, identity, marc_id, cms_id):
-    """Create alma record."""
+def create_alma_record(
+    records_service: Marc21RecordService,
+    alma_service: AlmaRESTService,
+    identity: Identity,
+    marc_id: str,
+    cms_id: str,
+) -> None:
+    """Create a record in alma.
+
+    Normally - depending on the API_KEY - the record will be created in
+    the Institution Zone (IZ).
+    """
     record = records_service.read_draft(identity, marc_id)
-    marc21_record = Marc21Metadata(json=record.to_dict()["metadata"])
+    marc21_record_etree = convert_json_to_marc21xml(json=record.to_dict()["metadata"])
 
-    if is_alma_duplicate_check(cms_id):
+    if is_duplicate_in_alma(cms_id):
         return
 
-    # pylint: disable=unused-variable
-    response = alma_service.create_record(marc21_record.etree)
-
-    # TODO: check about errors!
+    try:
+        response = alma_service.create_record(marc21_record_etree)
+        current_app.logger.info(response)
+    except AlmaRESTError as e:
+        current_app.logger.warning(e)
 
 
 def update_repository_record(
-    records_service, alma_service, marc_id, identity, alma_thesis_id
-):
+    records_service: Marc21RecordService,
+    alma_service: AlmaSRUService,
+    marc_id: str,
+    identity: Identity,
+    alma_thesis_id: str,
+) -> None:
     """Update repository record fetched from alma."""
     marc21_etree = alma_service.get_record(alma_thesis_id)
     marc21_record_from_alma = Marc21Metadata(metadata=marc21_etree)
@@ -52,8 +73,14 @@ def update_repository_record(
     records_service.publish(id_=marc_id, identity=identity)
 
 
-# pylint: disable-next=too-many-return-statements)
-def import_record(alma_sru_service, ac_number, file_path, identity, marcid=None, **_):
+def import_record(
+    alma_service: AlmaSRUService,
+    ac_number: str,
+    file_path: str,
+    identity: Identity,
+    marcid: str = None,
+    **_,
+):
     """Process a single import of a alma record by ac number."""
     if marcid:
         MarcDraftProvider.predefined_pid_value = marcid
@@ -61,49 +88,52 @@ def import_record(alma_sru_service, ac_number, file_path, identity, marcid=None,
     service = current_records_marc21.records_service
 
     retry_counter = 0
-    while True:
+    run = True
+    while run:
         try:
             check_about_duplicate(ac_number)
 
-            marc21_record = Marc21Metadata(alma_sru_service.get_record(ac_number))
+            marc21_record = Marc21Metadata(alma_service.get_record(ac_number))
             record = create_record(service, marc21_record, file_path, identity)
 
-            print(f"record.id: {record.id}, ac_number: {ac_number}")
-            return
+            current_app.logger.info(f"record.id: {record.id}, ac_number: {ac_number}")
+            run = False
         except FileNotFoundError:
-            print(f"FileNotFoundError search_value: {ac_number}")
-            return
+            current_app.logger.info(f"FileNotFoundError search_value: {ac_number}")
+            run = False
         except DuplicateRecordError as error:
-            print(error)
-            return
+            current_app.logger.info(error)
+            run = False
         except StaleDataError:
-            print(f"StaleDataError    search_value: {ac_number}")
-            return
+            current_app.logger.info(f"StaleDataError    search_value: {ac_number}")
+            run = False
         except ValidationError:
-            print(f"ValidationError   search_value: {ac_number}")
-            return
+            current_app.logger.info(f"ValidationError   search_value: {ac_number}")
+            run = False
         except dsl.RequestError:
-            print(f"RequestError      search_value: {ac_number}")
-            return
+            current_app.logger.info(f"RequestError      search_value: {ac_number}")
+            run = False
         except dsl.ConnectionTimeout:
             msg = f"ConnectionTimeout search_value: {ac_number}, retry_counter: {retry_counter}"
-            print(msg)
+            current_app.logger.info(msg)
 
-            # cool down the elasticsearch indexing process. necessary for
+            # cool down the opensearch indexing process. necessary for
             # multiple imports in a short timeframe
             sleep(100)
 
             # don't overestimate the problem. if three rounds doesn't help go to
             # the next ac number
             if retry_counter > 3:
-                return
+                run = False
             retry_counter += 1
 
 
-def import_list_of_records(alma_sru_service, csv_file, identity):
+def import_list_of_records(
+    alma_service: AlmaSRUService, csv_file: DictReader, identity: Identity
+):
     """Process csv file."""
     for row in csv_file:
         if len(row["ac_number"]) == 0:
             continue
 
-        import_record(alma_sru_service, **row, identity=identity)
+        import_record(alma_service, **row, identity=identity)

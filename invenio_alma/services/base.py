@@ -7,7 +7,7 @@
 
 
 """Alma Base Service."""
-
+from typing import List
 from xml.etree.ElementTree import Element, fromstring
 
 from requests import get
@@ -38,7 +38,7 @@ class AlmaAPIBase:
 
         return fromstring(data)
 
-    def extract_alma_records(self, data: str) -> list[Element]:
+    def extract_alma_records(self, data: str) -> List[Element]:
         """Extract record from request.
 
         :param data (str): result list
@@ -56,7 +56,7 @@ class AlmaAPIBase:
 
         return bibs
 
-    def get(self, url: str) -> list[Element]:
+    def get(self, url: str) -> List[Element]:
         """Alma base api get request.
 
         :param url (str): url to api

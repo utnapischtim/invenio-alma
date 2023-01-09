@@ -35,7 +35,7 @@ def create_alma_record(
     alma_service: AlmaRESTService,
     identity: Identity,
     marc_id: str,
-    cms_id: str,
+    cms_id: str = "",
 ) -> None:
     """Create a record in alma.
 
@@ -43,7 +43,7 @@ def create_alma_record(
     the Institution Zone (IZ).
     """
     record = records_service.read_draft(identity, marc_id)
-    marc21_record_etree = convert_json_to_marc21xml(json=record.to_dict()["metadata"])
+    marc21_record_etree = convert_json_to_marc21xml(record.to_dict()["metadata"])
 
     if is_duplicate_in_alma(cms_id):
         return
@@ -51,8 +51,9 @@ def create_alma_record(
     try:
         response = alma_service.create_record(marc21_record_etree)
         current_app.logger.info(response)
-    except AlmaRESTError as e:
-        current_app.logger.warning(e)
+    except AlmaRESTError as rest_error:
+        current_app.logger.warning(rest_error)
+        raise rest_error
 
 
 def update_repository_record(

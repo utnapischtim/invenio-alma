@@ -7,7 +7,7 @@
 
 
 """Alma REST Service."""
-
+from typing import List
 from xml.etree.ElementTree import Element, tostring
 
 from requests import post, put
@@ -118,7 +118,7 @@ class AlmaRESTService:
         service = service if service else AlmaREST()
         return cls(config, urls, service)
 
-    def get_record(self, mms_id: str) -> list[Element]:
+    def get_record(self, mms_id: str) -> List[Element]:
         """Get Record from alma."""
         api_url = self.urls.url_get(mms_id)
         return self.service.get(api_url)  # return etree
@@ -126,7 +126,9 @@ class AlmaRESTService:
     @staticmethod
     # pylint: disable-next=unused-argument
     def get_field(
-        record: Element, field_json_path: str, subfield_value: str = ""
+        record: Element,
+        field_json_path: str,
+        subfield_value: str = "",  # pylint: disable=unused-argument
     ) -> Element:
         """Get field by json path and subfield value if it is set."""
         xpath = jpath_to_xpath(field_json_path)
@@ -140,7 +142,9 @@ class AlmaRESTService:
     @staticmethod
     # pylint: disable-next=unused-argument
     def replace_field(
-        field: Element, new_subfield_value: str, new_subfield_template: str = ""
+        field: Element,
+        new_subfield_value: str,
+        new_subfield_template: str = "",  # pylint: disable=unused-argument
     ) -> None:
         """Replace in-inplace the subfield value with the new subfield value.
 

@@ -15,6 +15,7 @@ from invenio_config_tugraz import get_identity_from_user_by_email
 from invenio_records_marc21 import current_records_marc21
 
 from .proxies import current_alma
+from .services.errors import AlmaAPIError
 from .services.sru import AlmaSRUService
 
 
@@ -23,10 +24,13 @@ def is_duplicate_in_alma(cms_id: str):
     search_key = "local_field_995"
     domain = current_app.config["ALMA_SRU_DOMAIN"]
     institution_code = current_app.config["ALMA_SRU_INSTITUTION_CODE"]
-    sru_service = AlmaSRUService(search_key, domain, institution_code)
+    sru_service = AlmaSRUService.build(search_key, domain, institution_code)
 
-    record = sru_service.get_record(cms_id)
-    return len(record.getchildren()) > 0
+    try:
+        record = sru_service.get_record(cms_id)
+        return len(record) > 0
+    except AlmaAPIError:
+        return False
 
 
 def preliminaries(user_email: str, *, use_rest=False, use_sru=False):

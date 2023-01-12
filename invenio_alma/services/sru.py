@@ -7,7 +7,6 @@
 
 
 """Alma SRU Service."""
-from typing import List
 from xml.etree.ElementTree import Element
 
 from .base import AlmaAPIBase
@@ -82,7 +81,7 @@ class AlmaSRUService:
         service = service if service else AlmaSRU()
         return cls(config, urls, service)
 
-    def get_record(self, ac_number: str) -> List[Element]:
+    def get_record(self, ac_number: str) -> list[Element]:
         """Get the record."""
         url = self.urls.url(ac_number)
         return self.service.get(url)

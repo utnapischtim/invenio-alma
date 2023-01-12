@@ -8,7 +8,7 @@
 """Utils."""
 
 import functools
-from typing import Callable, List
+from typing import Callable
 
 from flask import current_app
 from invenio_config_tugraz import get_identity_from_user_by_email
@@ -51,7 +51,7 @@ def preliminaries(user_email: str, *, use_rest=False, use_sru=False):
     return records_service, alma_service, identity
 
 
-def apply_aggregators(aggregators: List[Callable[[], list]]) -> list:
+def apply_aggregators(aggregators: list[Callable[[], list]]) -> list:
     """Apply aggregators."""
 
     def func(accumulator, aggregator):

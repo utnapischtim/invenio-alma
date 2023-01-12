@@ -7,7 +7,6 @@
 
 
 """Alma REST Service."""
-from typing import List
 from xml.etree.ElementTree import Element, tostring
 
 from requests import post, put
@@ -118,7 +117,7 @@ class AlmaRESTService:
         service = service if service else AlmaREST()
         return cls(config, urls, service)
 
-    def get_record(self, mms_id: str) -> List[Element]:
+    def get_record(self, mms_id: str) -> list[Element]:
         """Get Record from alma."""
         api_url = self.urls.url_get(mms_id)
         return self.service.get(api_url)  # return etree

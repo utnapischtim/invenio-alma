@@ -7,6 +7,11 @@
 Changes
 =======
 
+Version v0.7.1 (release 2023-01-13)
+
+- setup: remove for now translations
+
+
 Version v0.7.0 (release 2023-01-13)
 
 - setup: remove python3.8 add python3.11 support

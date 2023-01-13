@@ -7,6 +7,26 @@
 Changes
 =======
 
+Version v0.7.0 (release 2023-01-13)
+
+- setup: remove python3.8 add python3.11 support
+- utils: catch possible Exception
+- fixes:
+- global: add type hints and documentation
+- theses: remove not used configuration
+- theses: add duplicate check
+- fix: creating records has to use rest
+- setup: add celery task and translations
+- fix: various errors brought up by running tests
+- global: refactore plus add config variables
+- global: refactore and change functionality
+- cli: add command update repository record
+- improve: update metadata by return of alma
+- cli: implement alma create record
+- service: refactore
+- api: move functions to other packages
+
+
 Version v0.6.0 (release 2022-10-17)
 
 - global: migrate to reusable workflows

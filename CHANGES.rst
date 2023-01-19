@@ -7,6 +7,11 @@
 Changes
 =======
 
+Version v0.7.2 (release 2023-01-19)
+
+- fix: initialization check not possible
+
+
 Version v0.7.1 (release 2023-01-13)
 
 - setup: remove for now translations

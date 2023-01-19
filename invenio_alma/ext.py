@@ -28,8 +28,4 @@ class InvenioAlma:
         api_key = app.config.get("ALMA_API_KEY", "")
         api_host = app.config.get("ALMA_API_HOST", "")
 
-        if api_key == "" or api_host == "":
-            msg = "ALMA_API_KEY and ALMA_API_HOST has to be set with a non empty value."
-            raise RuntimeError(msg)
-
         self.alma_rest_service = AlmaRESTService.build(api_key, api_host)

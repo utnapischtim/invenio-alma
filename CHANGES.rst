@@ -7,6 +7,11 @@
 Changes
 =======
 
+Version v0.7.4 (release 2023-01-26)
+
+- fix: handle read timeout
+
+
 Version v0.7.3 (release 2023-01-26)
 
 - fix: xml does not have xpath

@@ -7,6 +7,12 @@
 Changes
 =======
 
+Version v0.7.3 (release 2023-01-26)
+
+- fix: xml does not have xpath
+- cli: add cms_id to create alma-record
+
+
 Version v0.7.2 (release 2023-01-19)
 
 - fix: initialization check not possible

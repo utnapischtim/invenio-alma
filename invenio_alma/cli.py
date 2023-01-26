@@ -72,13 +72,14 @@ def create():
 @click.option("--marc-id", type=click.STRING, required=True)
 @click.option("--user-email", type=click.STRING, default="alma@tugraz.at")
 @click.option("--api-key", type=click.STRING, required=True)
-def cli_create_alma_record(marc_id, user_email, api_key):
+@click.option("--cms-id", type=click.STRING, required=True)
+def cli_create_alma_record(marc_id, user_email, api_key, cms_id):
     """Create alma record."""
     records_service, alma_service, identity = preliminaries(user_email, use_rest=True)
 
     alma_service.config.api_key = api_key
 
-    create_alma_record(records_service, alma_service, identity, marc_id)
+    create_alma_record(records_service, alma_service, identity, marc_id, cms_id)
 
 
 @create.command("repository-record")

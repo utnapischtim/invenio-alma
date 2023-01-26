@@ -47,7 +47,7 @@ class AlmaAPIBase:
         record = self.parse_alma_record(data)
 
         # extract single record
-        bibs = record.xpath(self.xpath_to_records, namespaces=self.namespaces)
+        bibs = list(record.iterfind(self.xpath_to_records, namespaces=self.namespaces))
 
         if len(bibs) == 0:
             msg = f"xpath: {self.xpath_to_records} does not find records."

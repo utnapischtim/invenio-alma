@@ -9,7 +9,7 @@
 """Alma REST Service."""
 from xml.etree.ElementTree import Element, tostring
 
-from requests import post, put
+from requests import ReadTimeout, post, put
 
 from .base import AlmaAPIBase
 from .config import AlmaRESTConfig
@@ -72,10 +72,13 @@ class AlmaREST(AlmaAPIBase):
 
         :return str: response content
         """
-        response = put(url, data, headers=self.headers, timeout=10)
-        if response.status_code >= 400:
-            raise AlmaRESTError(code=response.status_code, msg=response.text)
-        return response.text
+        try:
+            response = put(url, data, headers=self.headers, timeout=10)
+            if response.status_code >= 400:
+                raise AlmaRESTError(code=response.status_code, msg=response.text)
+            return response.text
+        except ReadTimeout as exc:
+            raise AlmaRESTError(code=500, msg="readtimeout") from exc
 
     def post(self, url: str, data: str):
         """Alma rest api post request.
@@ -87,10 +90,13 @@ class AlmaREST(AlmaAPIBase):
 
         :return str: response content
         """
-        response = post(url, data, headers=self.headers, timeout=10)
-        if response.status_code >= 400:
-            raise AlmaRESTError(code=response.status_code, msg=response.text)
-        return response.text
+        try:
+            response = post(url, data, headers=self.headers, timeout=10)
+            if response.status_code >= 400:
+                raise AlmaRESTError(code=response.status_code, msg=response.text)
+            return response.text
+        except ReadTimeout as exc:
+            raise AlmaRESTError(code=500, msg="readtimeout") from exc
 
 
 class AlmaRESTService:

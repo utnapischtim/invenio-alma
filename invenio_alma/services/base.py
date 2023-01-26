@@ -9,7 +9,7 @@
 """Alma Base Service."""
 from xml.etree.ElementTree import Element, fromstring
 
-from requests import get
+from requests import ReadTimeout, get
 
 from .errors import AlmaAPIError
 
@@ -64,7 +64,10 @@ class AlmaAPIBase:
 
         :return str: response content
         """
-        response = get(url, headers=self.headers, timeout=10)
-        if response.status_code >= 400:
-            raise AlmaAPIError(code=response.status_code, msg=response.text)
-        return self.extract_alma_records(response.text)
+        try:
+            response = get(url, headers=self.headers, timeout=10)
+            if response.status_code >= 400:
+                raise AlmaAPIError(code=response.status_code, msg=response.text)
+            return self.extract_alma_records(response.text)
+        except ReadTimeout as exc:
+            raise AlmaAPIError(code=500, msg="readtimeout") from exc

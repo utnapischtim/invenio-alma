@@ -18,7 +18,7 @@ class AlmaRESTConfig:
     api_host: str = ""
 
 
-@dataclass(frozen=True)
+@dataclass
 class AlmaSRUConfig:
     """Alma sru service config."""
 

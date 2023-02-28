@@ -19,6 +19,7 @@ class AlmaSRUUrls:
     def __init__(self, config: AlmaSRUConfig):
         """Constructor for Alma SRU urls."""
         self.config = config
+        self.search_key = config.search_key
         self.search_value = ""
 
     @property
@@ -29,16 +30,18 @@ class AlmaSRUUrls:
     @property
     def query(self) -> str:
         """Query."""
-        return f"query=alma.{self.config.search_key}={self.search_value}"
+        return f"query=alma.{self.search_key}={self.search_value}"
 
     @property
     def parameters(self) -> str:
         """Parameters."""
         return f"version=1.2&operation=searchRetrieve&{self.query}"
 
-    def url(self, search_value: str) -> str:
+    def url(self, search_value: str, search_key: str = None) -> str:
         """Alma sru url to retrieve record by search value."""
         self.search_value = search_value
+        if search_key:
+            self.search_key = search_key
         return f"{self.base_url}?{self.parameters}"
 
 
@@ -81,7 +84,7 @@ class AlmaSRUService:
         service = service if service else AlmaSRU()
         return cls(config, urls, service)
 
-    def get_record(self, ac_number: str) -> list[Element]:
+    def get_record(self, ac_number: str, search_key: str = None) -> list[Element]:
         """Get the record."""
-        url = self.urls.url(ac_number)
+        url = self.urls.url(ac_number, search_key)
         return self.service.get(url)

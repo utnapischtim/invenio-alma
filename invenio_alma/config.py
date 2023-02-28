@@ -32,6 +32,9 @@ ALMA_ALMA_RECORDS_CREATE_AGGREGATORS = []
 ALMA_REPOSITORY_RECORDS_UPDATE_AGGREGATORS = []
 """List of aggregators with following signature: aggregator() -> list[tuple[marc_id, alma_id]]."""
 
+ALMA_REPOSITORY_RECORDS_UPDATE_FUNC = None
+"""This is a callable to make the update process dependend on the workflow."""
+
 ALMA_USER_EMAIL = ""
 """This is the email adress of the alma user in the repository."""
 

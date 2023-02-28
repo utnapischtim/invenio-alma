@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright (C) 2021-2022 Graz University of Technology.
+# Copyright (C) 2021-2023 Graz University of Technology.
 #
 # invenio-alma is free software; you can redistribute it and/or modify it
 # under the terms of the MIT License; see LICENSE file for more details.
@@ -51,15 +51,19 @@ def update_repository_records():
     """Update records within the repository from alma records."""
     user_email, sender, recipients = config_variables()
     aggregators = current_app.config["ALMA_REPOSITORY_RECORDS_UPDATE_AGGREGATORS"]
+    update_func = current_app.config["ALMA_REPOSITORY_RECORDS_UPDATE_FUNC"]
 
     records = apply_aggregators(aggregators)
     records_service, alma_service, identity = preliminaries(user_email, use_sru=True)
 
     for marc_id, alma_id in records:
         try:
-            update_repository_record(
-                records_service, alma_service, marc_id, identity, alma_id
-            )
+            if update_func:
+                update_func(records_service, alma_service, marc_id, alma_id, identity)
+            else:
+                update_repository_record(
+                    records_service, alma_service, marc_id, identity, alma_id
+                )
         except Exception as error:
             msg = Message(
                 "ERROR: updating records within the repository.",

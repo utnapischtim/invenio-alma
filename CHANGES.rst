@@ -7,6 +7,11 @@
 Changes
 =======
 
+Version v0.7.6 (release 2023-04-26)
+
+- fix: remove variable check
+
+
 Version v0.7.5 (release 2023-04-26)
 
 - create: add read permission

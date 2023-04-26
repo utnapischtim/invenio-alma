@@ -37,8 +37,7 @@ class InvenioAlma:
         search_key = "local_control_field_009"  # ac_number
         domain = app.config.get("ALMA_SRU_DOMAIN")
         institution_code = app.config.get("ALMA_SRU_INSTITUTION_CODE")
-        if domain and institution_code:
-            self.alma_resource = AlmaResource(
-                service=AlmaSRUService.build(search_key, domain, institution_code),
-                config=AlmaResourceConfig,
-            )
+        self.alma_resource = AlmaResource(
+            service=AlmaSRUService.build(search_key, domain, institution_code),
+            config=AlmaResourceConfig,
+        )

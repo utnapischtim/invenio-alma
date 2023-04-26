@@ -7,6 +7,12 @@
 Changes
 =======
 
+Version v0.7.5 (release 2023-04-26)
+
+- create: add read permission
+- feature: add item api
+
+
 Version v0.7.4 (release 2023-01-26)
 
 - fix: handle read timeout

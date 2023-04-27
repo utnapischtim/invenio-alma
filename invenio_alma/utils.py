@@ -7,8 +7,10 @@
 
 """Utils."""
 
+from __future__ import annotations
+
 import functools
-from typing import Callable
+import typing as t
 
 from flask import current_app
 from invenio_config_tugraz import get_identity_from_user_by_email
@@ -18,8 +20,11 @@ from .proxies import current_alma
 from .services.errors import AlmaAPIError
 from .services.sru import AlmaSRUService
 
+if t.TYPE_CHECKING:
+    from collections.abc import Callable
 
-def is_duplicate_in_alma(cms_id: str):
+
+def is_duplicate_in_alma(cms_id: str) -> None:
     """Check if there is already a record in alma."""
     search_key = "local_field_995"
     domain = current_app.config["ALMA_SRU_DOMAIN"]
@@ -33,7 +38,12 @@ def is_duplicate_in_alma(cms_id: str):
         return False
 
 
-def preliminaries(user_email: str, *, use_rest=False, use_sru=False):
+def preliminaries(
+    user_email: str,
+    *,
+    use_rest: bool = False,
+    use_sru: bool = False,
+) -> tuple:
     """Preliminaries to interact with the repository."""
     records_service = current_records_marc21.records_service
     if use_rest:
@@ -44,7 +54,8 @@ def preliminaries(user_email: str, *, use_rest=False, use_sru=False):
         institution_code = current_app.config["ALMA_SRU_INSTITUTION_CODE"]
         alma_service = AlmaSRUService(search_key, domain, institution_code)
     else:
-        raise RuntimeError("choose between using rest or sru.")
+        msg = "choose between using rest or sru."
+        raise RuntimeError(msg)
 
     identity = get_identity_from_user_by_email(email=user_email)
 
@@ -54,7 +65,7 @@ def preliminaries(user_email: str, *, use_rest=False, use_sru=False):
 def apply_aggregators(aggregators: list[Callable[[], list]]) -> list:
     """Apply aggregators."""
 
-    def func(accumulator, aggregator):
+    def func(accumulator: list, aggregator: Callable) -> list:
         return accumulator + aggregator()
 
     return functools.reduce(func, aggregators, [])

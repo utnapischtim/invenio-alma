@@ -7,6 +7,7 @@
 
 
 """Alma REST Service."""
+from http import HTTPStatus
 from xml.etree.ElementTree import Element, tostring
 
 from requests import ReadTimeout, post, put
@@ -20,8 +21,8 @@ from .utils import jpath_to_xpath
 class AlmaRESTUrls:
     """Alma REST urls."""
 
-    def __init__(self, config: AlmaRESTConfig):
-        """Constructor Alma REST Urls."""
+    def __init__(self, config: AlmaRESTConfig) -> None:
+        """Create object AlmaRESTUrls."""
         self.config = config
 
     @property
@@ -58,11 +59,11 @@ class AlmaRESTUrls:
 class AlmaREST(AlmaAPIBase):
     """Alma REST service class."""
 
-    def __init__(self):
-        """Constructor alma rest service."""
+    def __init__(self) -> None:
+        """Create object AlmaREST."""
         super().__init__(".//bib/record")
 
-    def put(self, url: str, data: str):
+    def put(self, url: str, data: str) -> str:
         """Alma rest api put request.
 
         :param url (str): url to api
@@ -74,13 +75,14 @@ class AlmaREST(AlmaAPIBase):
         """
         try:
             response = put(url, data, headers=self.headers, timeout=10)
-            if response.status_code >= 400:
-                raise AlmaRESTError(code=response.status_code, msg=response.text)
-            return response.text
         except ReadTimeout as exc:
             raise AlmaRESTError(code=500, msg="readtimeout") from exc
 
-    def post(self, url: str, data: str):
+        if response.status_code >= HTTPStatus.BAD_REQUEST:
+            raise AlmaRESTError(code=response.status_code, msg=response.text)
+        return response.text
+
+    def post(self, url: str, data: str) -> None:
         """Alma rest api post request.
 
         :param url (str): url to api_host
@@ -92,24 +94,34 @@ class AlmaREST(AlmaAPIBase):
         """
         try:
             response = post(url, data, headers=self.headers, timeout=10)
-            if response.status_code >= 400:
-                raise AlmaRESTError(code=response.status_code, msg=response.text)
-            return response.text
         except ReadTimeout as exc:
-            raise AlmaRESTError(code=500, msg="readtimeout") from exc
+            raise AlmaRESTError(
+                code=HTTPStatus.INTERNAL_SERVER_ERROR,
+                msg="readtimeout",
+            ) from exc
+
+        if response.status_code >= HTTPStatus.BAD_REQUEST:
+            raise AlmaRESTError(code=response.status_code, msg=response.text)
+
+        return response.text
 
 
 class AlmaRESTService:
     """Alma service class."""
 
-    def __init__(self, config: AlmaRESTConfig, urls: AlmaRESTUrls, service: AlmaREST):
-        """Constructor for AlmaService."""
+    def __init__(
+        self,
+        config: AlmaRESTConfig,
+        urls: AlmaRESTUrls,
+        service: AlmaREST,
+    ) -> None:
+        """Create object from AlmaRESTService."""
         self.config = config
         self.urls = urls
         self.service = service
 
     @classmethod
-    def build(
+    def build(  # noqa: ANN206
         cls,
         api_key: str,
         api_host: str,
@@ -133,7 +145,7 @@ class AlmaRESTService:
     def get_field(
         record: Element,
         field_json_path: str,
-        subfield_value: str = "",  # pylint: disable=unused-argument
+        subfield_value: str = "",  # noqa: ARG004
     ) -> Element:
         """Get field by json path and subfield value if it is set."""
         xpath = jpath_to_xpath(field_json_path)
@@ -149,7 +161,7 @@ class AlmaRESTService:
     def replace_field(
         field: Element,
         new_subfield_value: str,
-        new_subfield_template: str = "",  # pylint: disable=unused-argument
+        new_subfield_template: str = "",  # noqa: ARG004
     ) -> None:
         """Replace in-inplace the subfield value with the new subfield value.
 

@@ -30,7 +30,7 @@ ALMA_ALMA_RECORDS_CREATE_AGGREGATORS = []
 """List of aggregators with following signature: aggregator() -> list[marc_id]."""
 
 ALMA_REPOSITORY_RECORDS_UPDATE_AGGREGATORS = []
-"""List of aggregators with following signature: aggregator() -> list[tuple[marc_id, alma_id]]."""
+"""List of aggregators with following signature: aggregator() -> list[tuple[marc_id, alma_id]]."""  # noqa: E501
 
 ALMA_REPOSITORY_RECORDS_UPDATE_FUNC = None
 """This is a callable to make the update process dependend on the workflow."""

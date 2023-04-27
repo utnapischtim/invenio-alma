@@ -25,7 +25,7 @@ from .utils import preliminaries
 
 
 @click.group()
-def alma():
+def alma() -> None:
     """Alma CLI."""
 
 
@@ -43,15 +43,15 @@ def alma():
 @optgroup.group("Import by file list")
 @optgroup.option("--csv-file", type=CSV())
 def sru(
-    search_key,
-    domain,
-    institution_code,
-    ac_number,
-    filename,
-    user_email,
-    marcid,
-    csv_file,
-):
+    search_key: str,
+    domain: str,
+    institution_code: str,
+    ac_number: str,
+    filename: str,
+    user_email: str,
+    marcid: str,
+    csv_file: CSV,
+) -> None:
     """Search on the SRU service of alma."""
     identity = get_identity_from_user_by_email(email=user_email)
     alma_sru_service = AlmaSRUService.build(search_key, domain, institution_code)
@@ -63,7 +63,7 @@ def sru(
 
 
 @alma.group()
-def create():
+def create() -> None:
     """Alma Create group."""
 
 
@@ -73,7 +73,12 @@ def create():
 @click.option("--user-email", type=click.STRING, default="alma@tugraz.at")
 @click.option("--api-key", type=click.STRING, required=True)
 @click.option("--cms-id", type=click.STRING, required=True)
-def cli_create_alma_record(marc_id, user_email, api_key, cms_id):
+def cli_create_alma_record(
+    marc_id: str,
+    user_email: str,
+    api_key: str,
+    cms_id: str,
+) -> None:
     """Create alma record."""
     records_service, alma_service, identity = preliminaries(user_email, use_rest=True)
 
@@ -84,25 +89,25 @@ def cli_create_alma_record(marc_id, user_email, api_key, cms_id):
 
 @create.command("repository-record")
 @click.option("--mms-id", type=click.STRING, required=True)
-def create_repository_record(mms_id):  # pylint: disable=unused-argument
+def create_repository_record(mms_id: str) -> None:  # noqa: ARG001
     """Create repository record."""
-    print("not yet implemented")
+    print("not yet implemented")  # noqa: T201
     # TODO:
     # create a record within the repository from an existing alma record
     # with mms_id=[MMS_ID]
     # use service provided by invenio-records-marc21 to create the record
 
     # SKETCH
-    # record = current_alma.record_service.get_record(mms_id)
+    # record = current_alma.record_service.get_record(mms_id) # noqa: ERA001
 
     # TODO:
     # massage data to move 001 mms-id to 035__a (tugraz)mms-id
 
-    # current_records_marc21.record_service.create_record()
+    # current_records_marc21.record_service.create_record() # noqa: ERA001
 
 
 @alma.group()
-def update():
+def update() -> None:
     """Alma update group."""
 
 
@@ -114,7 +119,13 @@ def update():
 @optgroup.group("Alma identifier", cls=RequiredMutuallyExclusiveOptionGroup)
 @optgroup.option("--mms-id", type=click.STRING, help="mms-id", default=None)
 @optgroup.option("--thesis-id", type=click.STRING, help="thesis-id", default=None)
-def cli_update_repository_record(marc_id, user_email, api_key, mms_id, thesis_id):
+def cli_update_repository_record(
+    marc_id: str,
+    user_email: str,
+    api_key: str,
+    mms_id: str,
+    thesis_id: str,
+) -> None:
     """Update Repository record."""
     if mms_id:
         use_rest = True
@@ -123,16 +134,23 @@ def cli_update_repository_record(marc_id, user_email, api_key, mms_id, thesis_id
         use_sru = True
         alma_thesis_id = thesis_id
     else:
-        raise RuntimeError("Neither of mms_id and thesis_id were given.")
+        msg = "Neither of mms_id and thesis_id were given."
+        raise RuntimeError(msg)
 
     records_service, alma_service, identity = preliminaries(
-        user_email, use_rest=use_rest, use_sru=use_sru
+        user_email,
+        use_rest=use_rest,
+        use_sru=use_sru,
     )
 
     alma_service.config.api_key = api_key
 
     update_repository_record(
-        records_service, alma_service, marc_id, identity, alma_thesis_id
+        records_service,
+        alma_service,
+        marc_id,
+        identity,
+        alma_thesis_id,
     )
 
 
@@ -144,22 +162,23 @@ def cli_update_repository_record(marc_id, user_email, api_key, mms_id, thesis_id
     required=True,
     help="two columns: mms_id and new_url",
 )
-def update_url_in_alma(csv_file):
+def update_url_in_alma(csv_file: CSV) -> None:
     """Update url in remote repository records.
 
     :params csv_file (file) with two columns mms_id and new_url
     """
-    for row in csv_file:
-        current_alma.alma_rest_service.update_field(
-            row["mms_id"], "856.4._.u", row["new_url"]
-        )
+    for mms_id, new_url in csv_file:
+        current_alma.alma_rest_service.update_field(mms_id, "856.4._.u", new_url)
 
 
 @update.command("field")
 @with_appcontext
 @click.option("--mms-id", type=click.STRING, required=True)
 @click.option(
-    "--field-json-path", type=click.STRING, required=True, help="e.g. 100.1._.u"
+    "--field-json-path",
+    type=click.STRING,
+    required=True,
+    help="e.g. 100.1._.u",
 )
 @click.option("--subfield-value", type=click.STRING, default="")
 @click.option("--new-subfield-value", type=click.STRING, required=True)
@@ -170,8 +189,12 @@ def update_url_in_alma(csv_file):
     default="",
 )
 def update_field(
-    mms_id, field_json_path, subfield_value, new_subfield_value, new_subfield_template
-):
+    mms_id: str,
+    field_json_path: str,
+    subfield_value: str,
+    new_subfield_value: str,
+    new_subfield_template: str,
+) -> None:
     """Update field."""
     current_alma.alma_rest_service.update_field(
         mms_id,

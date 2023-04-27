@@ -30,6 +30,9 @@ from sqlalchemy.orm.exc import StaleDataError
 from .services import AlmaRESTError, AlmaRESTService, AlmaSRUService
 from .utils import is_duplicate_in_alma
 
+MAX_RETRY_COUNT = 3
+"""There could be problems with opensearch connections. This is the retry counter."""
+
 
 def create_alma_record(
     records_service: Marc21RecordService,
@@ -55,7 +58,7 @@ def create_alma_record(
         current_app.logger.info(response)
     except AlmaRESTError as rest_error:
         current_app.logger.warning(rest_error)
-        raise rest_error
+        raise
 
 
 def update_repository_record(
@@ -71,7 +74,9 @@ def update_repository_record(
 
     records_service.edit(id_=marc_id, identity=identity)
     records_service.update_draft(
-        id_=marc_id, identity=identity, metadata=marc21_record_from_alma
+        id_=marc_id,
+        identity=identity,
+        metadata=marc21_record_from_alma,
     )
     records_service.publish(id_=marc_id, identity=identity)
 
@@ -82,8 +87,8 @@ def import_record(
     file_path: str,
     identity: Identity,
     marcid: str = None,
-    **_,
-):
+    **_: any,
+) -> None:
     """Process a single import of a alma record by ac number."""
     if marcid:
         MarcDraftProvider.predefined_pid_value = marcid
@@ -117,23 +122,23 @@ def import_record(
             current_app.logger.info(f"RequestError      search_value: {ac_number}")
             run = False
         except dsl.ConnectionTimeout:
-            msg = f"ConnectionTimeout search_value: {ac_number}, retry_counter: {retry_counter}"
+            msg = f"ConnectionTimeout search_value: {ac_number}, retry_counter: {retry_counter}"  # noqa: E501
             current_app.logger.info(msg)
 
             # cool down the opensearch indexing process. necessary for
             # multiple imports in a short timeframe
             sleep(100)
 
-            # don't overestimate the problem. if three rounds doesn't help go to
-            # the next ac number
-            if retry_counter > 3:
+            if retry_counter > MAX_RETRY_COUNT:
                 run = False
             retry_counter += 1
 
 
 def import_list_of_records(
-    alma_service: AlmaSRUService, csv_file: DictReader, identity: Identity
-):
+    alma_service: AlmaSRUService,
+    csv_file: DictReader,
+    identity: Identity,
+) -> None:
     """Process csv file."""
     for row in csv_file:
         if len(row["ac_number"]) == 0:

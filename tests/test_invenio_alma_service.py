@@ -11,9 +11,8 @@ from invenio_alma.services.rest import AlmaRESTConfig, AlmaRESTUrls
 from invenio_alma.services.sru import AlmaSRUConfig, AlmaSRUUrls
 
 
-def test_alma_rest_urls():
+def test_alma_rest_urls() -> None:
     """Test rest urls."""
-
     mms_id = "12345-12345"
     api_key = "api_key"
     api_host = "api_host"
@@ -27,9 +26,8 @@ def test_alma_rest_urls():
     assert urls.url_put(mms_id) == expected
 
 
-def test_alma_sru_urls():
+def test_alma_sru_urls() -> None:
     """Test sru urls."""
-
     search_key = ""
     domain = ""
     institution_code = ""

@@ -22,7 +22,7 @@ from flask_resources import (
 )
 from invenio_records_marc21 import Marc21Metadata
 
-from ..services.errors import AlmaAPIError
+from ..services.errors import AlmaAPIError  # noqa: TID252
 from .config import AlmaResourceConfig
 
 request_view_args = request_parser(from_conf("request_view_args"), location="view_args")
@@ -40,12 +40,12 @@ class AlmaResource(Resource):
     config_name = "ALMA_RESOURCES_CONFIG"
     default_config = AlmaResourceConfig
 
-    def __init__(self, service, config=default_config):
+    def __init__(self, service, config=default_config) -> None:  # noqa: ANN001
         """Initialize the alma resource."""
         super().__init__(config=config)
         self.service = service
 
-    def create_url_rules(self):
+    def create_url_rules(self) -> list[dict]:
         """Create the URL rules for the record resource."""
         routes = self.config.routes
         types = ",".join(self.config.record_id_search_key.keys())
@@ -58,7 +58,7 @@ class AlmaResource(Resource):
     @request_read_args
     @request_view_args
     @response_handler()
-    def read(self):
+    def read(self) -> dict[dict, int]:
         """Read an item."""
         record_id = resource_requestctx.view_args["record_id"]
         type_id = resource_requestctx.view_args["type"]

@@ -7,14 +7,15 @@
 
 """Sphinx configuration."""
 
-import os
-
 from invenio_alma import __version__
 
 # -- General configuration ------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
 # needs_sphinx = '1.0'
+
+nitpick_ignore = [("py:class", "Flask")]
+
 
 # Do not warn on external images.
 suppress_warnings = ["image.nonlocal_uri"]

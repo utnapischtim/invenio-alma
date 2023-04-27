@@ -8,8 +8,7 @@
 """Alma utils."""
 
 
-# pylint: disable-next=unused-argument
-def jpath_to_xpath(field_json_path: str) -> str:
+def jpath_to_xpath(field_json_path: str) -> str:  # noqa: ARG001
     """Convert json path to xpath."""
     # TODO
     return ""

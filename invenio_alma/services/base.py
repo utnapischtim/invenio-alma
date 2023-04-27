@@ -7,6 +7,7 @@
 
 
 """Alma Base Service."""
+from http import HTTPStatus
 from xml.etree.ElementTree import Element, fromstring
 
 from requests import ReadTimeout, get
@@ -17,8 +18,8 @@ from .errors import AlmaAPIError
 class AlmaAPIBase:
     """Alma remote base service."""
 
-    def __init__(self, xpath_to_records, namespaces=None):
-        """Constructor alma api base service."""
+    def __init__(self, xpath_to_records: str, namespaces: str = None) -> None:
+        """Create alma api base service."""
         self.xpath_to_records = xpath_to_records
         self.namespaces = namespaces if namespaces else {}
 
@@ -35,7 +36,7 @@ class AlmaAPIBase:
         """Parse Alma record."""
         data = data.encode("utf-8")
 
-        return fromstring(data)
+        return fromstring(data)  # noqa: S314
 
     def extract_alma_records(self, data: str) -> list[Element]:
         """Extract record from request.
@@ -51,7 +52,7 @@ class AlmaAPIBase:
 
         if len(bibs) == 0:
             msg = f"xpath: {self.xpath_to_records} does not find records."
-            raise AlmaAPIError(code="500", msg=msg)
+            raise AlmaAPIError(code=HTTPStatus.INTERNAL_SERVER_ERROR, msg=msg)
 
         return bibs
 
@@ -66,8 +67,13 @@ class AlmaAPIBase:
         """
         try:
             response = get(url, headers=self.headers, timeout=10)
-            if response.status_code >= 400:
-                raise AlmaAPIError(code=response.status_code, msg=response.text)
-            return self.extract_alma_records(response.text)
         except ReadTimeout as exc:
-            raise AlmaAPIError(code=500, msg="readtimeout") from exc
+            raise AlmaAPIError(
+                code=HTTPStatus.INTERNAL_SERVER_ERROR,
+                msg="readtimeout",
+            ) from exc
+
+        if response.status_code >= HTTPStatus.BAD_REQUEST:
+            raise AlmaAPIError(code=response.status_code, msg=response.text)
+
+        return self.extract_alma_records(response.text)

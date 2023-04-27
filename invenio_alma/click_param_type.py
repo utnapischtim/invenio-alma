@@ -6,12 +6,18 @@
 # under the terms of the MIT License; see LICENSE file for more details.
 
 """Click param types."""
+from __future__ import annotations
 
 import sys
+import typing as t
 from csv import DictReader
-from os.path import isfile
+from pathlib import Path
+from typing import Any
 
 from click import ParamType, secho
+
+if t.TYPE_CHECKING:
+    from io import TextIOWrapper
 
 
 class CSV(ParamType):
@@ -19,18 +25,18 @@ class CSV(ParamType):
 
     name = "CSV"
 
-    def __init__(self, header=None):
-        """Constructor of CSV type."""
+    def __init__(self, header: str = None) -> None:
+        """Create type CSV."""
         super().__init__()
         self.header = header
         self.check_header = header is not None
 
     @property
-    def headers(self):
+    def headers(self) -> list[str]:
         """Headers."""
         return self.header.split(",")
 
-    def is_header_as_expected(self, csv_file):
+    def is_header_as_expected(self, csv_file: TextIOWrapper) -> bool:
         """Check if the header is as expected."""
         reader = DictReader(csv_file)
         first_row = next(reader)
@@ -39,13 +45,18 @@ class CSV(ParamType):
 
         return all(name in first_row for name in self.headers)
 
-    def convert(self, value, param, ctx) -> DictReader:
-        """This method opens the files as a DictReader object."""
-        if not isfile(value):
+    def convert(
+        self,
+        value: Any,  # noqa: ANN401
+        param: Any,  # noqa: ANN401, ARG002
+        ctx: Any,  # noqa: ANN401, ARG002
+    ) -> DictReader:
+        """Convert filename in value to an DictReader object."""
+        if not Path(value).is_file():
             secho("ERROR - please look up if the file path is correct.", fg="red")
             sys.exit()
 
-        csv_file = open(value, mode="r", encoding="utf-8")
+        csv_file = Path(value).open(mode="r", encoding="utf-8")
         reader = DictReader(csv_file)
 
         if self.check_header and not self.is_header_as_expected(csv_file):

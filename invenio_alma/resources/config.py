@@ -32,7 +32,7 @@ class AlmaResourceConfig(ResourceConfig):  # pylint: disable=too-few-public-meth
         "application/json": ResponseHandler(Marc21JSONSerializer()),
         "application/marcxml": ResponseHandler(Marc21XMLSerializer()),
         "application/vnd.inveniomarc21.v1+marcxml": ResponseHandler(
-            Marc21UIXMLSerializer()
+            Marc21UIXMLSerializer(),
         ),
     }
 

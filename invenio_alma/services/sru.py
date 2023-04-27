@@ -16,8 +16,8 @@ from .config import AlmaSRUConfig
 class AlmaSRUUrls:
     """Alma SRU urls."""
 
-    def __init__(self, config: AlmaSRUConfig):
-        """Constructor for Alma SRU urls."""
+    def __init__(self, config: AlmaSRUConfig) -> None:
+        """Create object AlmaSRUUrls."""
         self.config = config
         self.search_key = config.search_key
         self.search_value = ""
@@ -48,8 +48,8 @@ class AlmaSRUUrls:
 class AlmaSRU(AlmaAPIBase):
     """Alma SRU Service class."""
 
-    def __init__(self):
-        """Constructor alma sru service."""
+    def __init__(self) -> None:
+        """Create object AlmaSRU."""
         namespaces = {
             "srw": "http://www.loc.gov/zing/srw/",
             "slim": "http://www.loc.gov/MARC21/slim",
@@ -60,14 +60,19 @@ class AlmaSRU(AlmaAPIBase):
 class AlmaSRUService:
     """AlmaSRUService."""
 
-    def __init__(self, config: AlmaSRUConfig, urls: AlmaSRUUrls, service: AlmaSRU):
-        """Constructor for AlmaService."""
+    def __init__(
+        self,
+        config: AlmaSRUConfig,
+        urls: AlmaSRUUrls,
+        service: AlmaSRU,
+    ) -> None:
+        """Create object AlmaSRUService."""
         self.config = config
         self.urls = urls
         self.service = service
 
     @classmethod
-    def build(
+    def build(  # noqa: ANN206
         cls,
         search_key: str,
         domain: str,

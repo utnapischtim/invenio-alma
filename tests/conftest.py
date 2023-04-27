@@ -10,18 +10,24 @@
 See https://pytest-invenio.readthedocs.io/ for documentation on which test
 fixtures are available.
 """
+from __future__ import annotations
+
+import typing as t
 
 import pytest
 from flask import Flask
 
 from invenio_alma import InvenioAlma
 
+if t.TYPE_CHECKING:
+    from collections.abs import Callable
+
 
 @pytest.fixture(scope="module")
-def create_app(instance_path):
+def create_app(instance_path: str) -> Callable:
     """Application factory fixture."""
 
-    def factory(**config):
+    def factory(**config: dict) -> InvenioAlma:
         app = Flask("testapp", instance_path=instance_path)
         app.config.update(**config)
         app.config["ALMA_API_KEY"] = "test-token"

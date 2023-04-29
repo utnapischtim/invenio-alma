@@ -7,6 +7,15 @@
 Changes
 =======
 
+Version v0.8.0 (release 2023-04-29)
+
+- ext: add existence check before resource creation
+- global: use ruff instead of pylint
+- global: add services to export
+- tasks: add option to use update func
+- sru: add search_key on the search
+
+
 Version v0.7.6 (release 2023-04-26)
 
 - fix: remove variable check

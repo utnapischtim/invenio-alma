@@ -37,14 +37,16 @@ class InvenioAlma:
         api_key = app.config.get("ALMA_API_KEY", "")
         api_host = app.config.get("ALMA_API_HOST", "")
 
-        self.alma_rest_service = AlmaRESTService.build(api_key, api_host)
+        if api_key and api_host:
+            self.alma_rest_service = AlmaRESTService.build(api_key, api_host)
 
     def init_resources(self, app: Flask) -> None:
         """Initialize resources."""
         search_key = "local_control_field_009"  # ac_number
         domain = app.config.get("ALMA_SRU_DOMAIN")
         institution_code = app.config.get("ALMA_SRU_INSTITUTION_CODE")
-        self.alma_resource = AlmaResource(
-            service=AlmaSRUService.build(search_key, domain, institution_code),
-            config=AlmaResourceConfig,
-        )
+        if domain and institution_code:
+            self.alma_resource = AlmaResource(
+                service=AlmaSRUService.build(search_key, domain, institution_code),
+                config=AlmaResourceConfig,
+            )

@@ -14,7 +14,14 @@ from invenio_alma import __version__
 # If your documentation needs a minimal Sphinx version, state it here.
 # needs_sphinx = '1.0'
 
-nitpick_ignore = [("py:class", "Flask")]
+nitpick_ignore = [
+    ("py:class", "Flask"),
+    ("py:class", "flask.blueprints.Blueprint"),
+    ("py:class", "invenio_alma.resources.resources.AlmaResource"),
+    ("py:class", "invenio_alma.services.rest.AlmaRESTService"),
+    ("py:class", "AlmaResource"),
+    ("py:class", "AlmaResourceMock"),
+]
 
 
 # Do not warn on external images.

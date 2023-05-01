@@ -14,8 +14,21 @@ import typing as t
 if t.TYPE_CHECKING:
     from flask import Flask
 
+from dataclasses import dataclass
+
+from flask import Blueprint, current_app
+
 from .resources import AlmaResource, AlmaResourceConfig
 from .services import AlmaRESTService, AlmaSRUService
+
+
+@dataclass(frozen=True)
+class AlmaResourceMock:
+    """Alma Resource Mock class. It is used if the alma resource is not initialized."""
+
+    def as_blueprint(self) -> Blueprint:
+        """Return a mocked Blueprint object."""
+        return Blueprint("AlmaResourceMockBlueprint", __name__)
 
 
 class InvenioAlma:
@@ -23,8 +36,29 @@ class InvenioAlma:
 
     def __init__(self, app: Flask = None) -> None:
         """Extension initialization."""
+        self._alma_rest_service = None
+        self._alma_resource = None
+
         if app:
             self.init_app(app)
+
+    @property
+    def alma_rest_service(self) -> AlmaRESTService:
+        """Return the alma rest service."""
+        if not self._alma_rest_service:
+            current_app.logger.warn("AlmaRESTService was not initialized correctly.")
+            return AlmaRESTService.build("", "")
+
+        return self._alma_rest_service
+
+    @property
+    def alma_resource(self) -> AlmaResource | AlmaResourceMock:
+        """Return the alma resource."""
+        if not self._alma_resource:
+            current_app.logger.warn("AlmaResources was not initialized correctly.")
+            return AlmaResourceMock()
+
+        return self._alma_resource
 
     def init_app(self, app: Flask) -> None:
         """Flask application initialization."""
@@ -38,7 +72,7 @@ class InvenioAlma:
         api_host = app.config.get("ALMA_API_HOST", "")
 
         if api_key and api_host:
-            self.alma_rest_service = AlmaRESTService.build(api_key, api_host)
+            self._alma_rest_service = AlmaRESTService.build(api_key, api_host)
 
     def init_resources(self, app: Flask) -> None:
         """Initialize resources."""
@@ -46,7 +80,7 @@ class InvenioAlma:
         domain = app.config.get("ALMA_SRU_DOMAIN")
         institution_code = app.config.get("ALMA_SRU_INSTITUTION_CODE")
         if domain and institution_code:
-            self.alma_resource = AlmaResource(
+            self._alma_resource = AlmaResource(
                 service=AlmaSRUService.build(search_key, domain, institution_code),
                 config=AlmaResourceConfig,
             )

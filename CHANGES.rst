@@ -7,6 +7,13 @@
 Changes
 =======
 
+Version v0.8.1 (release 2023-05-01)
+
+- setup: add forgotten ruff configuration
+- ext: mock the resource and service properties
+- setup: re-add isort configuration
+
+
 Version v0.8.0 (release 2023-04-29)
 
 - ext: add existence check before resource creation

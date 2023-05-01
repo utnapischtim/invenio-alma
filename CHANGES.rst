@@ -7,6 +7,11 @@
 Changes
 =======
 
+Version v0.8.2 (release 2023-05-01)
+
+- ext: revert last change
+
+
 Version v0.8.1 (release 2023-05-01)
 
 - setup: add forgotten ruff configuration

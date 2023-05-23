@@ -9,6 +9,7 @@
 
 import click
 from click_option_group import RequiredMutuallyExclusiveOptionGroup, optgroup
+from flask import current_app
 from flask.cli import with_appcontext
 from invenio_config_tugraz import get_identity_from_user_by_email
 
@@ -21,6 +22,7 @@ from .api import (
 from .click_param_type import CSV
 from .proxies import current_alma
 from .services import AlmaSRUService
+from .services.config import AlmaRESTConfig, AlmaSRUConfig
 from .utils import preliminaries
 
 
@@ -115,7 +117,13 @@ def update() -> None:
 @with_appcontext
 @click.option("--marc-id", type=click.STRING, required=True)
 @click.option("--user-email", type=click.STRING, default="alma@tugraz.at")
-@click.option("--api-key", type=click.STRING, required=True)
+@optgroup.group("Alma REST config")
+@optgroup.option("--api-key", type=click.STRING)
+@optgroup.option("--api-host", type=click.STRING)
+@optgroup.group("Alma SRU config")
+@optgroup.option("--search-key", type=click.STRING)
+@optgroup.option("--domain", type=click.STRING)
+@optgroup.option("--institution-code", type=click.STRING)
 @optgroup.group("Alma identifier", cls=RequiredMutuallyExclusiveOptionGroup)
 @optgroup.option("--mms-id", type=click.STRING, help="mms-id", default=None)
 @optgroup.option("--thesis-id", type=click.STRING, help="thesis-id", default=None)
@@ -123,35 +131,48 @@ def cli_update_repository_record(
     marc_id: str,
     user_email: str,
     api_key: str,
+    api_host: str,
+    search_key: str,
+    domain: str,
+    institution_code: str,
     mms_id: str,
     thesis_id: str,
 ) -> None:
     """Update Repository record."""
+    use_rest = False
+    use_sru = False
+
     if mms_id:
         use_rest = True
         alma_thesis_id = mms_id
+        config = AlmaRESTConfig(api_key, api_host)
     elif thesis_id:
         use_sru = True
         alma_thesis_id = thesis_id
+        config = AlmaSRUConfig(search_key, domain, institution_code)
     else:
         msg = "Neither of mms_id and thesis_id were given."
         raise RuntimeError(msg)
 
+    update_func = current_app.config.get("ALMA_REPOSITORY_RECORDS_UPDATE_FUNC", None)
+
     records_service, alma_service, identity = preliminaries(
         user_email,
+        config,
         use_rest=use_rest,
         use_sru=use_sru,
     )
 
-    alma_service.config.api_key = api_key
-
-    update_repository_record(
-        records_service,
-        alma_service,
-        marc_id,
-        identity,
-        alma_thesis_id,
-    )
+    if update_func:
+        update_func(records_service, alma_service, marc_id, thesis_id, identity)
+    else:
+        update_repository_record(
+            records_service,
+            alma_service,
+            marc_id,
+            identity,
+            alma_thesis_id,
+        )
 
 
 @update.command("url-in-alma")

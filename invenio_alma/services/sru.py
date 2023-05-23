@@ -74,19 +74,11 @@ class AlmaSRUService:
     @classmethod
     def build(  # noqa: ANN206
         cls,
-        search_key: str,
-        domain: str,
-        institution_code: str,
-        config: AlmaSRUConfig = None,
-        urls: AlmaSRUUrls = None,
-        service: AlmaSRU = None,
+        config: AlmaSRUConfig,
     ):
         """Build sru service."""
-        config = (
-            config if config else AlmaSRUConfig(search_key, domain, institution_code)
-        )
-        urls = urls if urls else AlmaSRUUrls(config)
-        service = service if service else AlmaSRU()
+        urls = AlmaSRUUrls(config)
+        service = AlmaSRU()
         return cls(config, urls, service)
 
     def get_record(self, ac_number: str, search_key: str = None) -> list[Element]:

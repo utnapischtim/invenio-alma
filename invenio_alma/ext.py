@@ -9,17 +9,13 @@
 
 from __future__ import annotations
 
-import typing as t
-
-if t.TYPE_CHECKING:
-    from flask import Flask
-
 from dataclasses import dataclass
 
-from flask import Blueprint, current_app
+from flask import Blueprint, Flask, current_app
 
 from .resources import AlmaResource, AlmaResourceConfig
 from .services import AlmaRESTService, AlmaSRUService
+from .services.config import AlmaRESTConfig, AlmaSRUConfig
 
 
 @dataclass(frozen=True)
@@ -47,7 +43,8 @@ class InvenioAlma:
         """Return the alma rest service."""
         if not self._alma_rest_service:
             current_app.logger.warn("AlmaRESTService was not initialized correctly.")
-            return AlmaRESTService.build("", "")
+            config = AlmaRESTConfig("", "")
+            return AlmaRESTService.build(config)
 
         return self._alma_rest_service
 
@@ -70,16 +67,18 @@ class InvenioAlma:
         """Initialize service."""
         api_key = app.config.get("ALMA_API_KEY", "")
         api_host = app.config.get("ALMA_API_HOST", "")
+        config = AlmaRESTConfig(api_key, api_host)
 
-        self._alma_rest_service = AlmaRESTService.build(api_key, api_host)
+        self._alma_rest_service = AlmaRESTService.build(config)
 
     def init_resources(self, app: Flask) -> None:
         """Initialize resources."""
         search_key = "local_control_field_009"  # ac_number
         domain = app.config.get("ALMA_SRU_DOMAIN")
         institution_code = app.config.get("ALMA_SRU_INSTITUTION_CODE")
+        config = AlmaSRUConfig(search_key, domain, institution_code)
 
         self._alma_resource = AlmaResource(
-            service=AlmaSRUService.build(search_key, domain, institution_code),
+            service=AlmaSRUService.build(config),
             config=AlmaResourceConfig,
         )

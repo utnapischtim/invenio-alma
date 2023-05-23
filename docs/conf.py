@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright (C) 2021-2022 Graz University of Technology.
+# Copyright (C) 2021-2023 Graz University of Technology.
 #
 # invenio-alma is free software; you can redistribute it and/or modify it
 # under the terms of the MIT License; see LICENSE file for more details.
@@ -17,6 +17,7 @@ from invenio_alma import __version__
 nitpick_ignore = [
     ("py:class", "Flask"),
     ("py:class", "flask.blueprints.Blueprint"),
+    ("py:class", "flask.app.Flask"),
     ("py:class", "invenio_alma.resources.resources.AlmaResource"),
     ("py:class", "invenio_alma.services.rest.AlmaRESTService"),
     ("py:class", "AlmaResource"),

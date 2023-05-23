@@ -123,16 +123,11 @@ class AlmaRESTService:
     @classmethod
     def build(  # noqa: ANN206
         cls,
-        api_key: str,
-        api_host: str,
-        config: AlmaRESTConfig = None,
-        urls: AlmaRESTUrls = None,
-        service: AlmaREST = None,
+        config: AlmaRESTConfig,
     ):  # -> Self >=python3.11 necessary
         """Build method."""
-        config = config if config else AlmaRESTConfig(api_key, api_host)
-        urls = urls if urls else AlmaRESTUrls(config)
-        service = service if service else AlmaREST()
+        urls = AlmaRESTUrls(config)
+        service = AlmaREST()
         return cls(config, urls, service)
 
     def get_record(self, mms_id: str) -> list[Element]:

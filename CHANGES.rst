@@ -7,6 +7,11 @@
 Changes
 =======
 
+Version v0.9.1 (release 2023-05-26)
+
+- fix: changed api not applied
+
+
 Version v0.9.0 (release 2023-05-26)
 
 - ruff: add to ignore

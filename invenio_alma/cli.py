@@ -74,18 +74,24 @@ def create() -> None:
 @click.option("--marc-id", type=click.STRING, required=True)
 @click.option("--user-email", type=click.STRING, default="alma@tugraz.at")
 @click.option("--api-key", type=click.STRING, required=True)
+@click.option("--api-host", type=click.STRING, required=True)
 @click.option("--cms-id", type=click.STRING, required=True)
 def cli_create_alma_record(
     marc_id: str,
     user_email: str,
     api_key: str,
+    api_host: str,
     cms_id: str,
 ) -> None:
     """Create alma record."""
-    records_service, alma_service, identity = preliminaries(user_email, use_rest=True)
+    config = AlmaRESTConfig(api_key, api_host)
 
-    alma_service.config.api_key = api_key
-
+    records_service, alma_service, identity = preliminaries(
+        user_email,
+        config,
+        use_rest=True,
+        use_sru=False,
+    )
     create_alma_record(records_service, alma_service, identity, marc_id, cms_id)
 
 

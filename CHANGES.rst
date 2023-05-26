@@ -7,6 +7,12 @@
 Changes
 =======
 
+Version v0.9.0 (release 2023-05-26)
+
+- ruff: add to ignore
+- cli: make update func customizable
+
+
 Version v0.8.2 (release 2023-05-01)
 
 - ext: revert last change

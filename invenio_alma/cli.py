@@ -56,7 +56,8 @@ def import_over_sru(
 ) -> None:
     """Search on the SRU service of alma."""
     identity = get_identity_from_user_by_email(email=user_email)
-    alma_sru_service = AlmaSRUService.build(search_key, domain, institution_code)
+    config = AlmaSRUConfig(search_key, domain, institution_code)
+    alma_sru_service = AlmaSRUService.build(config)
 
     if csv_file:
         import_list_of_records(alma_sru_service, csv_file, identity)

@@ -25,7 +25,8 @@ from invenio_records_marc21 import (
     create_record,
     current_records_marc21,
 )
-from invenio_search.engine import dsl
+from invenio_records_marc21.services.record.types import ACNumber
+from invenio_search.engine import search
 from marshmallow.exceptions import ValidationError
 from sqlalchemy.orm.exc import StaleDataError
 
@@ -88,6 +89,7 @@ def import_record(
     ac_number: str,
     file_path: str,
     identity: Identity,
+    access: str,
     marcid: str | None = None,
     **_: any,
 ) -> None:
@@ -101,15 +103,25 @@ def import_record(
     run = True
     while run:
         try:
-            check_about_duplicate(ac_number)
+            check_about_duplicate(ACNumber(ac_number))
 
-            marc21_record = Marc21Metadata(alma_service.get_record(ac_number))
-            record = create_record(service, marc21_record, file_path, identity)
+            metadata = alma_service.get_record(ac_number)[0]
+            marc21_record = Marc21Metadata(metadata=metadata)
+
+            data = marc21_record.json
+            data["access"] = {
+                "record": "public",
+                "files": "public" if access == "public" else "restricted",
+            }
+
+            record = create_record(service, data, [file_path], identity)
 
             current_app.logger.info(f"record.id: {record.id}, ac_number: {ac_number}")
             run = False
         except FileNotFoundError:
-            current_app.logger.info(f"FileNotFoundError search_value: {ac_number}")
+            current_app.logger.info(
+                f"FileNotFoundError search_value: {ac_number}, file_path: {file_path}",
+            )
             run = False
         except DuplicateRecordError as error:
             current_app.logger.info(error)
@@ -117,13 +129,15 @@ def import_record(
         except StaleDataError:
             current_app.logger.info(f"StaleDataError    search_value: {ac_number}")
             run = False
-        except ValidationError:
-            current_app.logger.info(f"ValidationError   search_value: {ac_number}")
+        except ValidationError as error:
+            current_app.logger.info(
+                f"ValidationError   search_value: {ac_number}, error: {error}",
+            )
             run = False
-        except dsl.RequestError:
+        except search.RequestError:
             current_app.logger.info(f"RequestError      search_value: {ac_number}")
             run = False
-        except dsl.ConnectionTimeout:
+        except search.ConnectionTimeout:
             msg = f"ConnectionTimeout search_value: {ac_number}, retry_counter: {retry_counter}"  # noqa: E501
             current_app.logger.info(msg)
 
@@ -141,7 +155,11 @@ def import_list_of_records(
     csv_file: DictReader,
     identity: Identity,
 ) -> None:
-    """Process csv file."""
+    """Process csv file.
+
+    The csv file has as columns at least:
+    ac_number,access,file_path
+    """
     for row in csv_file:
         if len(row["ac_number"]) == 0:
             continue

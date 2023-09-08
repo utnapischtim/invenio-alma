@@ -136,39 +136,33 @@ class AlmaRESTService:
         return self.service.get(api_url)  # return etree
 
     @staticmethod
-    # pylint: disable-next=unused-argument
     def get_field(
         record: Element,
         field_json_path: str,
-        subfield_value: str = "",  # noqa: ARG004
     ) -> Element:
         """Get field by json path and subfield value if it is set."""
         xpath = jpath_to_xpath(field_json_path)
         field = record.xpath(xpath)
 
-        # TODO check about multiple results
+        # ATTENTION: check about multiple results
         # allowed only one field, otherwise we have a problem and should sys.exit()
 
         return field
 
     @staticmethod
-    # pylint: disable-next=unused-argument
     def replace_field(
         field: Element,
         new_subfield_value: str,
-        new_subfield_template: str = "",  # noqa: ARG004
     ) -> None:
         """Replace in-inplace the subfield value with the new subfield value.
 
         Replace also the metametadata of the field if the template is set.
         """
-        # TODO: implement new_subfield_template != ""
-
         field.text = new_subfield_value
 
     def update_alma_record(self, mms_id: str, record: Element) -> str:
         """Update the record on alma side."""
-        data = tostring(record)  # TODO check if .decode("UTF-8") is necessary
+        data = tostring(record)
         url_put = self.urls.url_put(mms_id)
         self.service.put(url_put, data)
 
@@ -186,13 +180,11 @@ class AlmaRESTService:
         mms_id: str,
         field_json_path: str,
         new_subfield_value: str,
-        subfield_value: str = "",
-        new_subfield_template: str = "",
     ) -> str:
         """Update field."""
         record = self.get_record(mms_id)
-        field = self.get_field(record, field_json_path, subfield_value)  # reference
-        self.replace_field(field, new_subfield_value, new_subfield_template)  # in-place
+        field = self.get_field(record, field_json_path)  # reference
+        self.replace_field(field, new_subfield_value)  # in-place
         self.update_alma_record(mms_id, record)
 
     def create_record(self, record: Element) -> str:

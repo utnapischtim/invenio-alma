@@ -37,7 +37,7 @@ class AlmaSRUUrls:
         """Parameters."""
         return f"version=1.2&operation=searchRetrieve&{self.query}"
 
-    def url(self, search_value: str, search_key: str = None) -> str:
+    def url(self, search_value: str, search_key: str | None = None) -> str:
         """Alma sru url to retrieve record by search value."""
         self.search_value = search_value
         if search_key:
@@ -81,7 +81,11 @@ class AlmaSRUService:
         service = AlmaSRU()
         return cls(config, urls, service)
 
-    def get_record(self, ac_number: str, search_key: str = None) -> list[Element]:
+    def get_record(
+        self,
+        ac_number: str,
+        search_key: str | None = None,
+    ) -> list[Element]:
         """Get the record."""
         url = self.urls.url(ac_number, search_key)
         return self.service.get(url)

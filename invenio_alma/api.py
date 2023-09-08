@@ -7,6 +7,8 @@
 
 """API functions of the alma connector."""
 
+from __future__ import annotations
+
 from csv import DictReader
 from time import sleep
 
@@ -86,7 +88,7 @@ def import_record(
     ac_number: str,
     file_path: str,
     identity: Identity,
-    marcid: str = None,
+    marcid: str | None = None,
     **_: any,
 ) -> None:
     """Process a single import of a alma record by ac number."""

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright (C) 2021-2022 Graz University of Technology.
+# Copyright (C) 2021-2023 Graz University of Technology.
 #
 # invenio-alma is free software; you can redistribute it and/or modify it
 # under the terms of the MIT License; see LICENSE file for more details.
@@ -93,25 +93,6 @@ def cli_create_alma_record(
         use_sru=False,
     )
     create_alma_record(records_service, alma_service, identity, marc_id, cms_id)
-
-
-@create.command("repository-record")
-@click.option("--mms-id", type=click.STRING, required=True)
-def create_repository_record(mms_id: str) -> None:  # noqa: ARG001
-    """Create repository record."""
-    print("not yet implemented")  # noqa: T201
-    # TODO:
-    # create a record within the repository from an existing alma record
-    # with mms_id=[MMS_ID]
-    # use service provided by invenio-records-marc21 to create the record
-
-    # SKETCH
-    # record = current_alma.record_service.get_record(mms_id) # noqa: ERA001
-
-    # TODO:
-    # massage data to move 001 mms-id to 035__a (tugraz)mms-id
-
-    # current_records_marc21.record_service.create_record() # noqa: ERA001
 
 
 @alma.group()
@@ -207,26 +188,8 @@ def update_url_in_alma(csv_file: CSV) -> None:
     required=True,
     help="e.g. 100.1._.u",
 )
-@click.option("--subfield-value", type=click.STRING, default="")
 @click.option("--new-subfield-value", type=click.STRING, required=True)
-@click.option(
-    "--new-subfield-template",
-    type=click.STRING,
-    help="the template is given as json path 100.2.1.u",
-    default="",
-)
-def update_field(
-    mms_id: str,
-    field_json_path: str,
-    subfield_value: str,
-    new_subfield_value: str,
-    new_subfield_template: str,
-) -> None:
+def update_field(mms_id: str, field_json_path: str, new_subfield_value: str) -> None:
     """Update field."""
-    current_alma.alma_rest_service.update_field(
-        mms_id,
-        field_json_path,
-        new_subfield_value,
-        subfield_value,
-        new_subfield_template,
-    )
+    service = current_alma.alma_rest_service
+    service.update_field(mms_id, field_json_path, new_subfield_value)

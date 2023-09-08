@@ -18,7 +18,7 @@ from .errors import AlmaAPIError
 class AlmaAPIBase:
     """Alma remote base service."""
 
-    def __init__(self, xpath_to_records: str, namespaces: str = None) -> None:
+    def __init__(self, xpath_to_records: str, namespaces: str | None = None) -> None:
         """Create alma api base service."""
         self.xpath_to_records = xpath_to_records
         self.namespaces = namespaces if namespaces else {}

@@ -1,5 +1,5 @@
 select = ["ALL"]
 # TCH004 produces false positives
-ignore = ["ANN101", "ANN102", "D203", "D211", "D212", "D213", "N802", "UP009", "RET504", "PLR0913", "TCH004", "S101", "INP001", "TCH003", "G", "TD", "FA102", "PERF203", "TCH002"]
+ignore = ["ANN101", "ANN102", "D203", "D211", "D212", "D213", "N802", "UP009", "RET504", "PLR0913", "S101", "INP001", "TCH", "G", "TD", "FA102", "PERF203"]
 
 exclude = ["docs"]

@@ -44,7 +44,7 @@ def alma() -> None:
 @optgroup.option("--marcid", type=click.STRING, default="")
 @optgroup.group("Import by file list")
 @optgroup.option("--csv-file", type=CSV())
-def sru(
+def import_over_sru(
     search_key: str,
     domain: str,
     institution_code: str,

@@ -7,6 +7,16 @@
 Changes
 =======
 
+Version v0.10.0 (release 2023-09-12)
+
+- cli: rename command
+- cli: update import_record
+- ruff: update
+- fix: missed update of refactoring
+- cli: rename sru command
+- ruff: update
+
+
 Version v0.9.1 (release 2023-05-26)
 
 - fix: changed api not applied

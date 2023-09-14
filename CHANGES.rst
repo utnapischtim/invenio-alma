@@ -7,6 +7,11 @@
 Changes
 =======
 
+Version v0.10.1 (release 2023-09-14)
+
+- fix: refactor code to use secho instead to logger
+
+
 Version v0.10.0 (release 2023-09-12)
 
 - cli: rename command

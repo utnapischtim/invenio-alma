@@ -12,13 +12,9 @@ from click_option_group import RequiredMutuallyExclusiveOptionGroup, optgroup
 from flask import current_app
 from flask.cli import with_appcontext
 from invenio_config_tugraz import get_identity_from_user_by_email
+from invenio_records_marc21 import current_records_marc21
 
-from .api import (
-    create_alma_record,
-    import_list_of_records,
-    import_record,
-    update_repository_record,
-)
+from .api import create_alma_record, import_record, update_repository_record
 from .click_param_type import CSV
 from .proxies import current_alma
 from .services import AlmaSRUService
@@ -40,6 +36,7 @@ def alma() -> None:
 @optgroup.group("Manually set the values to search and import")
 @optgroup.option("--ac-number", type=click.STRING)
 @optgroup.option("--filename", type=click.STRING)
+@optgroup.option("--access", type=click.STRING)
 @optgroup.option("--user-email", type=click.STRING, default="alma@tugraz.at")
 @optgroup.option("--marcid", type=click.STRING, default="")
 @optgroup.group("Import by file list")
@@ -50,6 +47,7 @@ def import_using_sru(
     institution_code: str,
     ac_number: str,
     filename: str,
+    access: str,
     user_email: str,
     marcid: str,
     csv_file: CSV,
@@ -57,12 +55,27 @@ def import_using_sru(
     """Search on the SRU service of alma."""
     identity = get_identity_from_user_by_email(email=user_email)
     config = AlmaSRUConfig(search_key, domain, institution_code)
-    alma_sru_service = AlmaSRUService.build(config)
+    alma_service = AlmaSRUService.build(config)
+    record_service = current_records_marc21.records_service
 
     if csv_file:
-        import_list_of_records(alma_sru_service, csv_file, identity)
+        list_of_items = csv_file
     else:
-        import_record(alma_sru_service, ac_number, filename, identity, marcid)
+        list_of_items = [
+            {
+                "ac_number": ac_number,
+                "access": access,
+                "file_path": filename,
+                "marcid": marcid,
+            },
+        ]
+
+    for row in list_of_items:
+        if len(row["ac_number"]) == 0:
+            continue
+
+        ret = import_record(record_service, alma_service, **row, identity=identity)
+        click.secho(ret["msg"], fg=ret["color"])
 
 
 @alma.group()

@@ -9,7 +9,6 @@
 
 from __future__ import annotations
 
-from csv import DictReader
 from time import sleep
 
 from flask import current_app
@@ -23,7 +22,6 @@ from invenio_records_marc21 import (
     check_about_duplicate,
     convert_json_to_marc21xml,
     create_record,
-    current_records_marc21,
 )
 from invenio_records_marc21.services.record.types import ACNumber
 from invenio_search.engine import search
@@ -31,6 +29,7 @@ from marshmallow.exceptions import ValidationError
 from sqlalchemy.orm.exc import StaleDataError
 
 from .services import AlmaRESTError, AlmaRESTService, AlmaSRUService
+from .types import Color
 from .utils import is_duplicate_in_alma
 
 MAX_RETRY_COUNT = 3
@@ -85,6 +84,7 @@ def update_repository_record(
 
 
 def import_record(
+    records_service: Marc21RecordService,
     alma_service: AlmaSRUService,
     ac_number: str,
     file_path: str,
@@ -97,11 +97,8 @@ def import_record(
     if marcid:
         MarcDraftProvider.predefined_pid_value = marcid
 
-    service = current_records_marc21.records_service
-
     retry_counter = 0
-    run = True
-    while run:
+    while True:
         try:
             check_about_duplicate(ACNumber(ac_number))
 
@@ -114,54 +111,43 @@ def import_record(
                 "files": "public" if access == "public" else "restricted",
             }
 
-            record = create_record(service, data, [file_path], identity)
-
-            current_app.logger.info(f"record.id: {record.id}, ac_number: {ac_number}")
-            run = False
+            record = create_record(records_service, data, [file_path], identity)
+            return {
+                "msg": f"record.id: {record.id}, ac_number: {ac_number}",
+                "color": Color.success,
+            }
         except FileNotFoundError:
-            current_app.logger.info(
-                f"FileNotFoundError search_value: {ac_number}, file_path: {file_path}",
-            )
-            run = False
+            return {
+                "msg": f"FileNotFoundError search_value: {ac_number}, file_path: {file_path}",  # noqa: E501
+                "color": Color.error,
+            }
         except DuplicateRecordError as error:
-            current_app.logger.info(error)
-            run = False
+            return {
+                "msg": str(error),
+                "color": Color.error,
+            }
         except StaleDataError:
-            current_app.logger.info(f"StaleDataError    search_value: {ac_number}")
-            run = False
+            return {
+                "msg": f"StaleDataError    search_value: {ac_number}",
+                "color": Color.error,
+            }
         except ValidationError as error:
-            current_app.logger.info(
-                f"ValidationError   search_value: {ac_number}, error: {error}",
-            )
-            run = False
+            return {
+                "msg": f"ValidationError   search_value: {ac_number}, error: {error}",
+                "color": Color.error,
+            }
         except search.RequestError:
-            current_app.logger.info(f"RequestError      search_value: {ac_number}")
-            run = False
+            return {
+                "msg": f"RequestError      search_value: {ac_number}",
+                "color": Color.error,
+            }
         except search.ConnectionTimeout:
-            msg = f"ConnectionTimeout search_value: {ac_number}, retry_counter: {retry_counter}"  # noqa: E501
-            current_app.logger.info(msg)
-
             # cool down the opensearch indexing process. necessary for
             # multiple imports in a short timeframe
             sleep(100)
 
             if retry_counter > MAX_RETRY_COUNT:
-                run = False
+                msg = f"ConnectionTimeout search_value: {ac_number}, retry_counter: {retry_counter}"  # noqa: E501
+                return {"msg": msg, "color": Color.error}
+
             retry_counter += 1
-
-
-def import_list_of_records(
-    alma_service: AlmaSRUService,
-    csv_file: DictReader,
-    identity: Identity,
-) -> None:
-    """Process csv file.
-
-    The csv file has as columns at least:
-    ac_number,access,file_path
-    """
-    for row in csv_file:
-        if len(row["ac_number"]) == 0:
-            continue
-
-        import_record(alma_service, **row, identity=identity)

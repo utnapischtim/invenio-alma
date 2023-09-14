@@ -10,6 +10,6 @@
 from .ext import InvenioAlma
 from .services import AlmaRESTService, AlmaSRUService
 
-__version__ = "0.10.0"
+__version__ = "0.10.1"
 
 __all__ = ("__version__", "InvenioAlma", "AlmaSRUService", "AlmaRESTService")

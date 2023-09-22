@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import functools
 from collections.abc import Callable
+from datetime import datetime
 
 from flask import current_app
 from invenio_config_tugraz import get_identity_from_user_by_email
@@ -66,3 +67,12 @@ def apply_aggregators(aggregators: list[Callable[[], list]]) -> list:
         return accumulator + aggregator()
 
     return functools.reduce(func, aggregators, [])
+
+
+def validate_date(date: str) -> bool:
+    """Validate date to be YYYY-MM-DD."""
+    try:
+        temp = datetime.strptime(date, "%Y-%m-%d").strftime("%Y-%m-%d")  # noqa: DTZ007
+        return date == temp
+    except ValueError:
+        return False

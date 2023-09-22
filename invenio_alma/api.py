@@ -30,7 +30,7 @@ from sqlalchemy.orm.exc import StaleDataError
 
 from .services import AlmaRESTError, AlmaRESTService, AlmaSRUService
 from .types import Color
-from .utils import is_duplicate_in_alma
+from .utils import is_duplicate_in_alma, validate_date
 
 MAX_RETRY_COUNT = 3
 """There could be problems with opensearch connections. This is the retry counter."""
@@ -83,19 +83,29 @@ def update_repository_record(
     records_service.publish(id_=marc_id, identity=identity)
 
 
-def import_record(
+def import_record(  # noqa: C901
     records_service: Marc21RecordService,
     alma_service: AlmaSRUService,
     ac_number: str,
     file_path: str,
     identity: Identity,
     access: str,
+    embargo: str | None = None,
     marcid: str | None = None,
     **_: any,
 ) -> None:
-    """Process a single import of a alma record by ac number."""
+    """Process a single import of a alma record by ac number.
+
+    Embargo has to be YYYY-MM-DD
+    """
     if marcid:
         MarcDraftProvider.predefined_pid_value = marcid
+
+    if embargo and not validate_date(embargo):
+        return {
+            "msg": f"NotValidEmbargo search_value: {ac_number}, embargo: {embargo}",
+            "color": Color.error,
+        }
 
     retry_counter = 0
     while True:
@@ -110,6 +120,13 @@ def import_record(
                 "record": "public",
                 "files": "public" if access == "public" else "restricted",
             }
+
+            if embargo:
+                data["access"]["embargo"] = {
+                    "until": embargo,
+                    "active": True,
+                    "reason": None,
+                }
 
             record = create_record(records_service, data, [file_path], identity)
             return {

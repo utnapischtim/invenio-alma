@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright (C) 2021-2023 Graz University of Technology.
+# Copyright (C) 2021-2024 Graz University of Technology.
 #
 # invenio-alma is free software; you can redistribute it and/or modify it
 # under the terms of the MIT License; see LICENSE file for more details.
@@ -11,7 +11,6 @@ from celery import shared_task
 from flask import current_app
 from flask_mail import Message
 
-from .api import create_alma_record, update_repository_record
 from .utils import apply_aggregators, preliminaries
 
 
@@ -29,13 +28,14 @@ def create_alma_records() -> None:
     """Create records within alma from repository records."""
     user_email, sender, recipients = config_variables()
     aggregators = current_app.config["ALMA_ALMA_RECORDS_CREATE_AGGREGATORS"]
+    create_func = current_app.config["ALMA_ALMA_RECORDS_CREATE_FUNC"]
 
     marc_ids = apply_aggregators(aggregators)
     records_service, alma_service, identity = preliminaries(user_email, use_rest=True)
 
     for marc_id, cms_id in marc_ids:
         try:
-            create_alma_record(records_service, alma_service, identity, marc_id, cms_id)
+            create_func(records_service, alma_service, identity, marc_id, cms_id)
         except Exception as error:  # noqa: BLE001
             msg = Message(
                 "ERROR: creating record in alma.",
@@ -58,16 +58,7 @@ def update_repository_records() -> None:
 
     for marc_id, alma_id in records:
         try:
-            if update_func:
-                update_func(records_service, alma_service, marc_id, alma_id, identity)
-            else:
-                update_repository_record(
-                    records_service,
-                    alma_service,
-                    marc_id,
-                    identity,
-                    alma_id,
-                )
+            update_func(records_service, alma_service, marc_id, alma_id, identity)
         except Exception as error:  # noqa: BLE001
             msg = Message(
                 "ERROR: updating records within the repository.",

@@ -1,11 +1,13 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright (C) 2021-2022 Graz University of Technology.
+# Copyright (C) 2021-2024 Graz University of Technology.
 #
 # invenio-alma is free software; you can redistribute it and/or modify it
 # under the terms of the MIT License; see LICENSE file for more details.
 
 """Invenio module to connect InvenioRDM to Alma."""
+
+from .api import create_alma_record, update_repository_record
 
 ALMA_API_KEY = ""
 """Default value for the Alma API key.
@@ -29,10 +31,13 @@ This value should be set on a place which is not under DVCS control.
 ALMA_ALMA_RECORDS_CREATE_AGGREGATORS = []
 """List of aggregators with following signature: aggregator() -> list[marc_id]."""
 
+ALMA_ALMA_RECORDS_CREATE_FUNC = create_alma_record
+"""The function to create record in alma."""
+
 ALMA_REPOSITORY_RECORDS_UPDATE_AGGREGATORS = []
 """List of aggregators with following signature: aggregator() -> list[tuple[marc_id, alma_id]]."""  # noqa: E501
 
-ALMA_REPOSITORY_RECORDS_UPDATE_FUNC = None
+ALMA_REPOSITORY_RECORDS_UPDATE_FUNC = update_repository_record
 """This is a callable to make the update process dependend on the workflow."""
 
 ALMA_USER_EMAIL = ""

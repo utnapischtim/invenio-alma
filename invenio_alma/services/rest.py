@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright (C) 2022 Graz University of Technology.
+# Copyright (C) 2022-2024 Graz University of Technology.
 #
 # invenio-alma is free software; you can redistribute it and/or modify it
 # under the terms of the MIT License; see LICENSE file for more details.
@@ -28,7 +28,7 @@ class AlmaRESTUrls:
     @property
     def base_url(self) -> str:
         """Base url."""
-        return f"https://{self.config.api_host}/almaws/v1/bibs"
+        return f"{self.config.api_host}/almaws/v1/bibs"
 
     def url_get(self, mms_id: str) -> str:
         """Alma rest api get record url.
@@ -112,23 +112,13 @@ class AlmaRESTService:
     def __init__(
         self,
         config: AlmaRESTConfig,
-        urls: AlmaRESTUrls,
-        service: AlmaREST,
+        urls: AlmaRESTUrls = None,
+        service: AlmaREST = None,
     ) -> None:
         """Create object from AlmaRESTService."""
         self.config = config
-        self.urls = urls
-        self.service = service
-
-    @classmethod
-    def build(  # noqa: ANN206
-        cls,
-        config: AlmaRESTConfig,
-    ):  # -> Self >=python3.11 necessary
-        """Build method."""
-        urls = AlmaRESTUrls(config)
-        service = AlmaREST()
-        return cls(config, urls, service)
+        self.urls = urls or AlmaRESTUrls(config)
+        self.service = service or AlmaREST()
 
     def get_record(self, mms_id: str) -> list[Element]:
         """Get Record from alma."""

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright (C) 2022-2023 Graz University of Technology.
+# Copyright (C) 2022-2024 Graz University of Technology.
 #
 # invenio-alma is free software; you can redistribute it and/or modify it
 # under the terms of the MIT License; see LICENSE file for more details.
@@ -48,7 +48,6 @@ def create_alma_record(
     Normally - depending on the API_KEY - the record will be created in
     the Institution Zone (IZ).
     """
-    identity.provides.add(system_process)
     record = records_service.read_draft(identity, marc_id)
     marc21_record_etree = convert_json_to_marc21xml(record.to_dict()["metadata"])
 

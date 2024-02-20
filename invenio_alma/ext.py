@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright (C) 2021-2023 Graz University of Technology.
+# Copyright (C) 2021-2024 Graz University of Technology.
 #
 # invenio-alma is free software; you can redistribute it and/or modify it
 # under the terms of the MIT License; see LICENSE file for more details.
@@ -44,9 +44,13 @@ class InvenioAlma:
         if not self._alma_rest_service:
             current_app.logger.warn("AlmaRESTService was not initialized correctly.")
             config = AlmaRESTConfig("", "")
-            return AlmaRESTService.build(config)
+            return AlmaRESTService(config=config)
 
         return self._alma_rest_service
+
+    @property
+    def alma_sru_service(self) -> AlmaSRUService:
+        return self._alma_sru_service
 
     @property
     def alma_resource(self) -> AlmaResource | AlmaResourceMock:
@@ -67,9 +71,14 @@ class InvenioAlma:
         """Initialize service."""
         api_key = app.config.get("ALMA_API_KEY", "")
         api_host = app.config.get("ALMA_API_HOST", "")
-        config = AlmaRESTConfig(api_key, api_host)
+        rest_config = AlmaRESTConfig(api_key, api_host)
 
-        self._alma_rest_service = AlmaRESTService.build(config)
+        domain = app.config["ALMA_SRU_DOMAIN"]
+        institution_code = app.config["ALMA_SRU_INSTITUTION_CODE"]
+        sru_config = AlmaSRUConfig("", domain, institution_code)
+
+        self._alma_rest_service = AlmaRESTService(config=rest_config)
+        self._alma_sru_service = AlmaSRUService(config=sru_config)
 
     def init_resources(self, app: Flask) -> None:
         """Initialize resources."""
@@ -79,6 +88,6 @@ class InvenioAlma:
         config = AlmaSRUConfig(search_key, domain, institution_code)
 
         self._alma_resource = AlmaResource(
-            service=AlmaSRUService.build(config),
+            service=AlmaSRUService(config=config),
             config=AlmaResourceConfig,
         )

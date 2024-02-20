@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright (C) 2022-2023 Graz University of Technology.
+# Copyright (C) 2022-2024 Graz University of Technology.
 #
 # invenio-alma is free software; you can redistribute it and/or modify it
 # under the terms of the MIT License; see LICENSE file for more details.
@@ -29,7 +29,7 @@ class AlmaSRUUrls:
     @property
     def base_url(self) -> str:
         """Base url."""
-        return f"https://{self.config.domain}/view/sru/{self.config.institution_code}"
+        return f"{self.config.domain}/view/sru/{self.config.institution_code}"
 
     @property
     def query(self) -> str:
@@ -67,23 +67,13 @@ class AlmaSRUService:
     def __init__(
         self,
         config: AlmaSRUConfig,
-        urls: AlmaSRUUrls,
-        service: AlmaSRU,
+        urls: AlmaSRUUrls = None,
+        service: AlmaSRU = None,
     ) -> None:
         """Create object AlmaSRUService."""
         self.config = config
-        self.urls = urls
-        self.service = service
-
-    @classmethod
-    def build(  # noqa: ANN206
-        cls,
-        config: AlmaSRUConfig,
-    ):
-        """Build sru service."""
-        urls = AlmaSRUUrls(config)
-        service = AlmaSRU()
-        return cls(config, urls, service)
+        self.urls = urls or AlmaSRUUrls(config)
+        self.service = service or AlmaSRU()
 
     def get_record(
         self,

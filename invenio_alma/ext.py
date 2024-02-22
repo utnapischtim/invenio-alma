@@ -50,6 +50,7 @@ class InvenioAlma:
 
     @property
     def alma_sru_service(self) -> AlmaSRUService:
+        """Get alma sru service."""
         return self._alma_sru_service
 
     @property

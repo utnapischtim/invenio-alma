@@ -12,7 +12,6 @@ from flask import current_app
 from invenio_access.permissions import system_identity
 
 from .proxies import current_alma
-from .services import AlmaRESTError
 from .utils import apply_aggregators
 
 
@@ -65,7 +64,7 @@ def update_repository_records() -> None:
     for marc_id, alma_id in ids:
         try:
             update_func(system_identity, marc_id, alma_id, alma_service)
-        except Exception as error:  # noqa: BLE001
+        except (RuntimeError, RuntimeWarning) as error:
             msg = "ERROR: updating records within the repository."
             msg += " (marc21_id: {marc_id}, alma_id: {alma_id}, error: {error})"
             current_app.logger.error(msg, marc_id, alma_id, error)

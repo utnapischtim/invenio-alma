@@ -1,3 +1,30 @@
 [build-system]
 requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
+
+[tool.ruff]
+exclude = ["docs"]
+
+
+
+[tool.ruff.lint]
+select = ["ALL"]
+
+ignore = [
+  "ANN101", "ANN102",
+  "D203", "D211", "D212", "D213",
+  "FA102",
+  "INP001",
+  "G",
+  "N802",
+  "PERF203",
+  "PLR0913", "PLR0911",
+  "RET504",
+  "S101",
+  "TCH",
+  "TD",
+  "TRY300", "TRY400",
+  "UP009"
+]
+
+

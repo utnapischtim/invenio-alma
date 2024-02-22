@@ -7,8 +7,6 @@
 
 """Invenio module to connect InvenioRDM to Alma."""
 
-from .api import create_alma_record, update_repository_record
-
 ALMA_API_KEY = ""
 """Default value for the Alma API key.
 
@@ -28,16 +26,19 @@ ALMA_API_HOST = ""
 This value should be set on a place which is not under DVCS control.
 """
 
+ALMA_REPOSITORY_RECORDS_IMPORT_FUNC = None
+"""Function to import a record from alma into the repository."""
+
 ALMA_ALMA_RECORDS_CREATE_AGGREGATORS = []
 """List of aggregators with following signature: aggregator() -> list[marc_id]."""
 
-ALMA_ALMA_RECORDS_CREATE_FUNC = create_alma_record
+ALMA_ALMA_RECORDS_CREATE_FUNC = None
 """The function to create record in alma."""
 
 ALMA_REPOSITORY_RECORDS_UPDATE_AGGREGATORS = []
 """List of aggregators with following signature: aggregator() -> list[tuple[marc_id, alma_id]]."""  # noqa: E501
 
-ALMA_REPOSITORY_RECORDS_UPDATE_FUNC = update_repository_record
+ALMA_REPOSITORY_RECORDS_UPDATE_FUNC = None
 """This is a callable to make the update process dependend on the workflow."""
 
 ALMA_USER_EMAIL = ""

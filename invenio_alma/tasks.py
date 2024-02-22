@@ -9,61 +9,63 @@
 
 from celery import shared_task
 from flask import current_app
-from flask_mail import Message
+from invenio_access.permissions import system_identity
 
-from .utils import apply_aggregators, preliminaries
-
-
-def config_variables() -> tuple:
-    """Config variables."""
-    user_email = current_app.config["ALMA_USER_EMAIL"]
-    sender = current_app.config["ALMA_ERROR_MAIL_SENDER"]
-    recipients = ",".join(current_app.config["ALMA_ERROR_MAIL_RECIPIENTS"])
-
-    return user_email, sender, recipients
+from .proxies import current_alma
+from .services import AlmaRESTError
+from .utils import apply_aggregators
 
 
 @shared_task(ignore_result=True)
 def create_alma_records() -> None:
     """Create records within alma from repository records."""
-    user_email, sender, recipients = config_variables()
     aggregators = current_app.config["ALMA_ALMA_RECORDS_CREATE_AGGREGATORS"]
     create_func = current_app.config["ALMA_ALMA_RECORDS_CREATE_FUNC"]
 
-    marc_ids = apply_aggregators(aggregators)
-    records_service, alma_service, identity = preliminaries(user_email, use_rest=True)
+    if not aggregators:
+        msg = "ERROR: variable ALMA_REPOSITORY_RECORDS_CREATE_AGGREGATORS not set."
+        current_app.logger.error(msg)
+        return
 
-    for marc_id, cms_id in marc_ids:
+    if not create_func:
+        msg = "ERROR: variable ALMA_ALMA_RECORDS_CREATE_FUNC not set"
+        current_app.logger.error(msg)
+        return
+
+    alma_service = current_alma.alma_rest_service
+    ids = apply_aggregators(aggregators)
+
+    for marc_id, cms_id in ids:
         try:
-            create_func(records_service, alma_service, identity, marc_id, cms_id)
-        except Exception as error:  # noqa: BLE001
-            msg = Message(
-                "ERROR: creating record in alma.",
-                sender=sender,
-                recipients=recipients,
-                body=f"e: {error}, marc_id: {marc_id}",
-            )
-            current_app.extensions["mail"].send(msg)
+            create_func(system_identity, marc_id, cms_id, alma_service)
+        except (RuntimeError, RuntimeWarning) as error:
+            msg = "ERROR: creating record in alma. (marcid: %s, cms_id: %s, error: %s)"
+            current_app.logger.error(msg, marc_id, cms_id, error)
 
 
 @shared_task(ignore_result=True)
 def update_repository_records() -> None:
     """Update records within the repository from alma records."""
-    user_email, sender, recipients = config_variables()
     aggregators = current_app.config["ALMA_REPOSITORY_RECORDS_UPDATE_AGGREGATORS"]
     update_func = current_app.config["ALMA_REPOSITORY_RECORDS_UPDATE_FUNC"]
 
-    records = apply_aggregators(aggregators)
-    records_service, alma_service, identity = preliminaries(user_email, use_sru=True)
+    if not aggregators:
+        msg = "ERROR: variable ALMA_REPOSITORY_RECORDS_UPDATE_AGGREGATORS not set."
+        current_app.logger.error(msg)
+        return
 
-    for marc_id, alma_id in records:
+    if not update_func:
+        msg = "ERROR: variable ALMA_REPOSITORY_RECORDS_UPDATE_FUNC not set."
+        current_app.logger.error(msg)
+        return
+
+    alma_service = current_alma.alma_sru_service
+    ids = apply_aggregators(aggregators)
+
+    for marc_id, alma_id in ids:
         try:
-            update_func(records_service, alma_service, marc_id, alma_id, identity)
+            update_func(system_identity, marc_id, alma_id, alma_service)
         except Exception as error:  # noqa: BLE001
-            msg = Message(
-                "ERROR: updating records within the repository.",
-                sender=sender,
-                recipients=recipients,
-                body=f"e: {error}, marc21_id: {marc_id}, alma_id: {alma_id}",
-            )
-            current_app.extensions["mail"].send(msg)
+            msg = "ERROR: updating records within the repository."
+            msg += " (marc21_id: {marc_id}, alma_id: {alma_id}, error: {error})"
+            current_app.logger.error(msg, marc_id, alma_id, error)

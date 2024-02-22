@@ -77,9 +77,9 @@ class AlmaSRUService:
 
     def get_record(
         self,
-        ac_number: str,
+        search_value: str,
         search_key: str | None = None,
     ) -> list[Element]:
         """Get the record."""
-        url = self.urls.url(ac_number, search_key)
+        url = self.urls.url(search_value, search_key)
         return self.service.get(url)

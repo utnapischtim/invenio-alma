@@ -7,19 +7,22 @@
 
 """Command line interface to interact with the Alma-Connector module."""
 
+from time import sleep
+
 from click import STRING, group, option, secho
 from click_option_group import RequiredMutuallyExclusiveOptionGroup, optgroup
 from flask import current_app
 from flask.cli import with_appcontext
 from invenio_config_tugraz import get_identity_from_user_by_email
-from invenio_records_marc21 import current_records_marc21
 
-from .api import import_record
 from .click_param_type import CSV
 from .proxies import current_alma
 from .services import AlmaRESTService, AlmaSRUService
 from .services.config import AlmaRESTConfig, AlmaSRUConfig
 from .types import Color
+
+MAX_RETRY_COUNT = 3
+"""There could be problems with opensearch connections. This is the retry counter."""
 
 
 @group()
@@ -56,7 +59,7 @@ def import_using_sru(
     identity = get_identity_from_user_by_email(email=user_email)
     config = AlmaSRUConfig(search_key, domain, institution_code)
     alma_service = AlmaSRUService(config)
-    record_service = current_records_marc21.records_service
+    import_record = current_app.config.get("ALMA_REPOSITORY_RECORDS_IMPORT_FUNC")
 
     if csv_file:
         list_of_items = csv_file
@@ -74,8 +77,15 @@ def import_using_sru(
         if len(row["ac_number"]) == 0:
             continue
 
-        ret = import_record(record_service, alma_service, **row, identity=identity)
-        secho(ret["msg"], fg=ret["color"])
+        try:
+            record = import_record(identity, **row, alma_service=alma_service)
+            secho(f"record.id: {record.id}, ac_number: {ac_number}", fg=Color.success)
+        except RuntimeError as error:
+            secho(str(error), fg=Color.error)
+
+        # cool down the opensearch indexing process. necessary for
+        # multiple imports in a short timeframe
+        sleep(100)
 
 
 @alma.group()
@@ -100,11 +110,13 @@ def cli_create_alma_record(
     """Create alma record."""
     config = AlmaRESTConfig(api_key, api_host)
     alma_service = AlmaRESTService(config=config)
-    records_service = current_records_marc21.records_service
     identity = get_identity_from_user_by_email(email=user_email)
 
     create_func = current_app.config.get("ALMA_ALMA_RECORDS_CREATE_FUNC")
-    create_func(records_service, alma_service, identity, marc_id, cms_id)
+    try:
+        create_func(identity, marc_id, cms_id, alma_service)
+    except (RuntimeError, RuntimeWarning) as error:
+        secho(str(error), fg=Color.error)
 
 
 @alma.group()
@@ -150,10 +162,9 @@ def cli_update_repository_record(
         msg = "Neither of mms_id and thesis_id were given."
         secho(msg, fg=Color.error)
 
-    records_service = current_records_marc21.records_service
     identity = get_identity_from_user_by_email(email=user_email)
     update_func = current_app.config.get("ALMA_REPOSITORY_RECORDS_UPDATE_FUNC")
-    update_func(records_service, alma_service, marc_id, alma_thesis_id, identity)
+    update_func(identity, marc_id, alma_thesis_id, alma_service)
 
 
 @update.command("url-in-alma")

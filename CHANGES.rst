@@ -7,6 +7,17 @@
 Changes
 =======
 
+Version v0.11.0 (release 2024-02-27)
+
+- do: ruff suggested change
+- fix: missing function get_user_by_email
+- cli: add option --keep-access-as-is
+- setup: readd invenio-records-marc21
+- global: remove invenio-records-marc21 dep
+- refactor
+- tasks: add custom import_func feature
+
+
 Version v0.10.2 (release 2023-09-25)
 
 - cli: add embargo to import

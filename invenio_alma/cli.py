@@ -152,6 +152,7 @@ def cli_update_repository_record(
     institution_code: str,
     mms_id: str,
     thesis_id: str,
+    *,
     keep_access_as_is: bool,
 ) -> None:
     """Update Repository record."""

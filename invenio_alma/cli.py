@@ -13,7 +13,8 @@ from click import BOOL, STRING, group, option, secho
 from click_option_group import RequiredMutuallyExclusiveOptionGroup, optgroup
 from flask import current_app
 from flask.cli import with_appcontext
-from invenio_config_tugraz import get_identity_from_user_by_email
+from invenio_access.utils import get_identity
+from invenio_accounts import current_accounts
 
 from .click_param_type import CSV
 from .proxies import current_alma
@@ -56,7 +57,8 @@ def import_using_sru(
     csv_file: CSV,
 ) -> None:
     """Search on the SRU service of alma."""
-    identity = get_identity_from_user_by_email(email=user_email)
+    user = current_accounts.datastore.get_user_by_email(user_email)
+    identity = get_identity(user)
     config = AlmaSRUConfig(search_key, domain, institution_code)
     alma_service = AlmaSRUService(config)
     import_record = current_app.config.get("ALMA_REPOSITORY_RECORDS_IMPORT_FUNC")
@@ -110,7 +112,8 @@ def cli_create_alma_record(
     """Create alma record."""
     config = AlmaRESTConfig(api_key, api_host)
     alma_service = AlmaRESTService(config=config)
-    identity = get_identity_from_user_by_email(email=user_email)
+    user = current_accounts.datastore.get_user_by_email(user_email)
+    identity = get_identity(user)
 
     create_func = current_app.config.get("ALMA_ALMA_RECORDS_CREATE_FUNC")
     try:
@@ -164,7 +167,9 @@ def cli_update_repository_record(
         msg = "Neither of mms_id and thesis_id were given."
         secho(msg, fg=Color.error)
 
-    identity = get_identity_from_user_by_email(email=user_email)
+    user = current_accounts.datastore.get_user_by_email(user_email)
+    identity = get_identity(user)
+
     update_func = current_app.config.get("ALMA_REPOSITORY_RECORDS_UPDATE_FUNC")
     update_func(
         identity,

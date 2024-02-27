@@ -9,7 +9,7 @@
 
 from time import sleep
 
-from click import STRING, group, option, secho
+from click import BOOL, STRING, group, option, secho
 from click_option_group import RequiredMutuallyExclusiveOptionGroup, optgroup
 from flask import current_app
 from flask.cli import with_appcontext
@@ -128,6 +128,7 @@ def update() -> None:
 @with_appcontext
 @option("--marc-id", type=STRING, required=True)
 @option("--user-email", type=STRING, default="alma@tugraz.at")
+@option("--keep-access-as-is", type=BOOL, is_flag=True, default=False)
 @optgroup.group("Alma REST config")
 @optgroup.option("--api-key", type=STRING)
 @optgroup.option("--api-host", type=STRING)
@@ -148,6 +149,7 @@ def cli_update_repository_record(
     institution_code: str,
     mms_id: str,
     thesis_id: str,
+    keep_access_as_is: bool,
 ) -> None:
     """Update Repository record."""
     if mms_id:
@@ -164,7 +166,13 @@ def cli_update_repository_record(
 
     identity = get_identity_from_user_by_email(email=user_email)
     update_func = current_app.config.get("ALMA_REPOSITORY_RECORDS_UPDATE_FUNC")
-    update_func(identity, marc_id, alma_thesis_id, alma_service)
+    update_func(
+        identity,
+        marc_id,
+        alma_thesis_id,
+        alma_service,
+        update_access=not keep_access_as_is,
+    )
 
 
 @update.command("url-in-alma")

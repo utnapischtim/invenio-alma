@@ -12,17 +12,16 @@ from flask import current_app
 from invenio_access.permissions import system_identity
 
 from .proxies import current_alma
-from .utils import apply_aggregators
 
 
 @shared_task(ignore_result=True)
 def create_alma_records() -> None:
     """Create records within alma from repository records."""
-    aggregators = current_app.config["ALMA_ALMA_RECORDS_CREATE_AGGREGATORS"]
+    aggregator = current_app.config["ALMA_ALMA_RECORDS_CREATE_AGGREGATOR"]
     create_func = current_app.config["ALMA_ALMA_RECORDS_CREATE_FUNC"]
 
-    if not aggregators:
-        msg = "ERROR: variable ALMA_REPOSITORY_RECORDS_CREATE_AGGREGATORS not set."
+    if not aggregator:
+        msg = "ERROR: variable ALMA_REPOSITORY_RECORDS_CREATE_AGGREGATOR not set."
         current_app.logger.error(msg)
         return
 
@@ -32,24 +31,24 @@ def create_alma_records() -> None:
         return
 
     alma_service = current_alma.alma_rest_service
-    ids = apply_aggregators(aggregators)
+    entries = aggregator()
 
-    for marc_id, cms_id in ids:
+    for entry in entries:
         try:
-            create_func(system_identity, marc_id, cms_id, alma_service)
+            create_func(system_identity, entry.pid, entry.cms_id, alma_service)
         except (RuntimeError, RuntimeWarning) as error:
             msg = "ERROR: creating record in alma. (marcid: %s, cms_id: %s, error: %s)"
-            current_app.logger.error(msg, marc_id, cms_id, error)
+            current_app.logger.error(msg, entry.pid, entry.cms_id, error)
 
 
 @shared_task(ignore_result=True)
 def update_repository_records() -> None:
     """Update records within the repository from alma records."""
-    aggregators = current_app.config["ALMA_REPOSITORY_RECORDS_UPDATE_AGGREGATORS"]
+    aggregator = current_app.config["ALMA_REPOSITORY_RECORDS_UPDATE_AGGREGATOR"]
     update_func = current_app.config["ALMA_REPOSITORY_RECORDS_UPDATE_FUNC"]
 
-    if not aggregators:
-        msg = "ERROR: variable ALMA_REPOSITORY_RECORDS_UPDATE_AGGREGATORS not set."
+    if not aggregator:
+        msg = "ERROR: variable ALMA_REPOSITORY_RECORDS_UPDATE_AGGREGATOR not set."
         current_app.logger.error(msg)
         return
 
@@ -59,12 +58,12 @@ def update_repository_records() -> None:
         return
 
     alma_service = current_alma.alma_sru_service
-    ids = apply_aggregators(aggregators)
+    entries = aggregator()
 
-    for marc_id, alma_id in ids:
+    for entry in entries:
         try:
-            update_func(system_identity, marc_id, alma_id, alma_service)
+            update_func(system_identity, entry.pid, entry.cms_id, alma_service)
         except (RuntimeError, RuntimeWarning) as error:
             msg = "ERROR: updating records within the repository."
-            msg += " (marc21_id: {marc_id}, alma_id: {alma_id}, error: {error})"
-            current_app.logger.error(msg, marc_id, alma_id, error)
+            msg += " (marc21_id: %s, cms_id: %s, error: %s)"
+            current_app.logger.error(msg, entry.pid, entry.cms_id, error)

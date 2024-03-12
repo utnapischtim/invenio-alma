@@ -7,6 +7,11 @@
 Changes
 =======
 
+Version v0.11.1 (release 2024-03-12)
+
+- fix: tasks aggregator should be singular
+
+
 Version v0.11.0 (release 2024-02-27)
 
 - do: ruff suggested change

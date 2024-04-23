@@ -13,6 +13,7 @@ from dataclasses import dataclass
 
 from flask import Blueprint, Flask, current_app
 
+from . import config
 from .resources import AlmaResource, AlmaResourceConfig
 from .services import AlmaRESTService, AlmaSRUService
 from .services.config import AlmaRESTConfig, AlmaSRUConfig
@@ -64,14 +65,22 @@ class InvenioAlma:
 
     def init_app(self, app: Flask) -> None:
         """Flask application initialization."""
+        self.init_config(app)
         self.init_services(app)
         self.init_resources(app)
         app.extensions["invenio-alma"] = self
 
+    @staticmethod
+    def init_config(app: Flask) -> None:
+        """Initialize configuration."""
+        for k in dir(config):
+            if k.startswith("ALMA_"):
+                app.config.setdefault(k, getattr(config, k))
+
     def init_services(self, app: Flask) -> None:
         """Initialize service."""
-        api_key = app.config.get("ALMA_API_KEY", "")
-        api_host = app.config.get("ALMA_API_HOST", "")
+        api_key = app.config["ALMA_API_KEY"]
+        api_host = app.config["ALMA_API_HOST"]
         rest_config = AlmaRESTConfig(api_key, api_host)
 
         domain = app.config["ALMA_SRU_DOMAIN"]

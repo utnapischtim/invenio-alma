@@ -7,6 +7,12 @@
 Changes
 =======
 
+Version v0.11.2 (release 2024-04-23)
+
+- ext: init configuration
+- setup: add python3.12 support
+
+
 Version v0.11.1 (release 2024-03-12)
 
 - fix: tasks aggregator should be singular

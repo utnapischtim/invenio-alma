@@ -74,7 +74,7 @@ class AlmaREST(AlmaAPIBase):
         :return str: response content
         """
         try:
-            response = put(url, data, headers=self.headers, timeout=10)
+            response = put(url, data, headers=self.headers, timeout=30)
         except ReadTimeout as exc:
             raise AlmaRESTError(code=500, msg="readtimeout") from exc
 
@@ -93,7 +93,7 @@ class AlmaREST(AlmaAPIBase):
         :return str: response content
         """
         try:
-            response = post(url, data, headers=self.headers, timeout=10)
+            response = post(url, data, headers=self.headers, timeout=30)
         except ReadTimeout as exc:
             raise AlmaRESTError(
                 code=HTTPStatus.INTERNAL_SERVER_ERROR,

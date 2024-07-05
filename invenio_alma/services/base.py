@@ -69,7 +69,7 @@ class AlmaAPIBase:
         :return str: response content
         """
         try:
-            response = get(url, headers=self.headers, timeout=10)
+            response = get(url, headers=self.headers, timeout=30)
         except ReadTimeout as exc:
             raise AlmaAPIError(
                 code=HTTPStatus.INTERNAL_SERVER_ERROR,

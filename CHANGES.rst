@@ -7,6 +7,12 @@
 Changes
 =======
 
+Version v0.11.3 (release 2024-07-05)
+
+- setup: move to python3.12 only support
+- services: increase timeout
+
+
 Version v0.11.2 (release 2024-04-23)
 
 - ext: init configuration

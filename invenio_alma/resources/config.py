@@ -2,7 +2,7 @@
 #
 # This file is part of Invenio.
 #
-# Copyright (C) 2023 Graz University of Technology.
+# Copyright (C) 2023-2024 Graz University of Technology.
 #
 # invenio-alma is free software; you can redistribute it and/or modify it
 # under the terms of the MIT License; see LICENSE file for more details.
@@ -11,11 +11,7 @@
 from typing import ClassVar
 
 from flask_resources import ResourceConfig, ResponseHandler
-from invenio_records_marc21.resources.serializers import (
-    Marc21JSONSerializer,
-    Marc21XMLSerializer,
-)
-from invenio_records_marc21.resources.serializers.ui import Marc21UIXMLSerializer
+from flask_resources.serializers import JSONSerializer
 from marshmallow.fields import Field, Str
 
 
@@ -30,11 +26,7 @@ class AlmaResourceConfig(ResourceConfig):
     }
 
     response_handlers: ClassVar[dict[str, ResponseHandler]] = {
-        "application/json": ResponseHandler(Marc21JSONSerializer()),
-        "application/marcxml": ResponseHandler(Marc21XMLSerializer()),
-        "application/vnd.inveniomarc21.v1+marcxml": ResponseHandler(
-            Marc21UIXMLSerializer(),
-        ),
+        "application/json": ResponseHandler(JSONSerializer()),
     }
 
     record_id_search_key: ClassVar[dict[str, str]] = {

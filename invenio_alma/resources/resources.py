@@ -2,7 +2,7 @@
 #
 # This file is part of Invenio.
 #
-# Copyright (C) 2023 Graz University of Technology.
+# Copyright (C) 2023-2024 Graz University of Technology.
 #
 # invenio-alma is free software; you can redistribute it and/or modify it
 # under the terms of the MIT License; see LICENSE file for more details.
@@ -20,7 +20,6 @@ from flask_resources import (
     response_handler,
     route,
 )
-from invenio_records_marc21 import Marc21Metadata
 
 from ..services.errors import AlmaAPIError  # noqa: TID252
 from .config import AlmaResourceConfig
@@ -65,8 +64,6 @@ class AlmaResource(Resource):
 
         self.service.config.search_key = self.config.record_id_search_key[type_id]
         try:
-            metadata = Marc21Metadata(metadata=self.service.get_record(record_id))
-            item = metadata.json
+            return self.service.get_record(record_id), 200
         except AlmaAPIError:
             abort(404)
-        return item, 200

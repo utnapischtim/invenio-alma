@@ -7,6 +7,11 @@
 Changes
 =======
 
+Version v0.12.0 (release 2024-10-28)
+
+- global: remove dependency to marc21
+
+
 Version v0.11.3 (release 2024-07-05)
 
 - setup: move to python3.12 only support

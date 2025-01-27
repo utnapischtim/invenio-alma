@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright (C) 2021-2024 Graz University of Technology.
+# Copyright (C) 2021-2025 Graz University of Technology.
 #
 # invenio-alma is free software; you can redistribute it and/or modify it
 # under the terms of the MIT License; see LICENSE file for more details.
@@ -10,16 +10,15 @@
 from time import sleep
 
 from click import BOOL, STRING, group, option, secho
-from click_option_group import RequiredMutuallyExclusiveOptionGroup, optgroup
+from click_option_group import optgroup
 from flask import current_app
 from flask.cli import with_appcontext
-from invenio_access.utils import get_identity
-from invenio_accounts import current_accounts
+from flask_principal import Identity
 
-from .click_param_type import CSV
+from .click_param_type import CSV, JSON
+from .decorators import build_identity, build_service
 from .proxies import current_alma
 from .services import AlmaRESTService, AlmaSRUService
-from .services.config import AlmaRESTConfig, AlmaSRUConfig
 from .types import Color
 
 MAX_RETRY_COUNT = 3
@@ -33,55 +32,61 @@ def alma() -> None:
 
 @alma.command()
 @with_appcontext
+@option(
+    "--workflow",
+    type=STRING,
+    required=False,
+    default=None,
+    help="default is first of the possible dict",
+)
 @optgroup.group("Request Configuration", help="The Configuration for the request")
 @optgroup.option("--search-key", type=STRING, required=True)
 @optgroup.option("--domain", type=STRING, required=True)
 @optgroup.option("--institution-code", type=STRING, required=True)
 @optgroup.group("Manually set the values to search and import")
-@optgroup.option("--ac-number", type=STRING)
-@optgroup.option("--filename", type=STRING)
-@optgroup.option("--access", type=STRING)
+@optgroup.option(
+    "--metadata",
+    type=JSON(["ac_number", "filename", "access", "marcid"]),
+    help="dict with ac-number, filename, access, marcid",
+)
 @optgroup.option("--user-email", type=STRING, default="alma@tugraz.at")
-@optgroup.option("--marcid", type=STRING, default="")
 @optgroup.group("Import by file list")
 @optgroup.option("--csv-file", type=CSV())
+@build_service
+@build_identity
 def import_using_sru(
-    search_key: str,
-    domain: str,
-    institution_code: str,
-    ac_number: str,
-    filename: str,
-    access: str,
-    user_email: str,
-    marcid: str,
+    workflow: str,
+    metadata: dict,
     csv_file: CSV,
+    identity: Identity,
+    alma_service: AlmaSRUService,
 ) -> None:
     """Search on the SRU service of alma."""
-    user = current_accounts.datastore.get_user_by_email(user_email)
-    identity = get_identity(user)
-    config = AlmaSRUConfig(search_key, domain, institution_code)
-    alma_service = AlmaSRUService(config)
-    import_record = current_app.config.get("ALMA_REPOSITORY_RECORDS_IMPORT_FUNC")
+    import_funcs = current_app.config.get("ALMA_REPOSITORY_RECORDS_IMPORT_FUNCS")
+
+    if workflow is None:
+        workflow = list(import_funcs.keys()).pop()
+
+    try:
+        import_func = import_funcs[workflow]
+    except KeyError as error:
+        secho(str(error), fg=Color.error)
 
     if csv_file:
         list_of_items = csv_file
     else:
-        list_of_items = [
-            {
-                "ac_number": ac_number,
-                "access": access,
-                "file_path": filename,
-                "marcid": marcid,
-            },
-        ]
+        list_of_items = [metadata]
 
     for row in list_of_items:
         if len(row["ac_number"]) == 0:
             continue
 
         try:
-            record = import_record(identity, **row, alma_service=alma_service)
-            secho(f"record.id: {record.id}, ac_number: {ac_number}", fg=Color.success)
+            record = import_func(identity, **row, alma_service=alma_service)
+            secho(
+                f"record.id: {record.id}, ac_number: {row["ac_number"]}",
+                fg=Color.success,
+            )
         except RuntimeError as error:
             secho(str(error), fg=Color.error)
 
@@ -97,27 +102,41 @@ def create() -> None:
 
 @create.command("alma-record")
 @with_appcontext
-@option("--marc-id", type=STRING, required=True)
+@option(
+    "--metadata",
+    type=JSON(),
+    required=True,
+    help="dictionary to parameters to create_func, depends on the used create_func methods parameters",
+)
 @option("--user-email", type=STRING, default="alma@tugraz.at")
 @option("--api-key", type=STRING, required=True)
 @option("--api-host", type=STRING, required=True)
-@option("--cms-id", type=STRING, required=True)
+@option(
+    "--workflow",
+    type=STRING,
+    required=False,
+    default=None,
+    help="default is first of the possible dict",
+)
+@build_service
+@build_identity
 def cli_create_alma_record(
-    marc_id: str,
-    user_email: str,
-    api_key: str,
-    api_host: str,
-    cms_id: str,
+    metadata: dict,
+    identity: Identity,
+    alma_service: AlmaRESTService,
+    workflow: str,
 ) -> None:
     """Create alma record."""
-    config = AlmaRESTConfig(api_key, api_host)
-    alma_service = AlmaRESTService(config=config)
-    user = current_accounts.datastore.get_user_by_email(user_email)
-    identity = get_identity(user)
 
-    create_func = current_app.config.get("ALMA_ALMA_RECORDS_CREATE_FUNC")
+    create_funcs = current_app.config.get("ALMA_ALMA_RECORDS_CREATE_FUNCS")
+
+    if workflow is None:
+        workflow = list(create_funcs.keys()).pop()
+
     try:
-        create_func(identity, marc_id, cms_id, alma_service)
+        create_funcs[workflow](identity, alma_service, **metadata)
+    except KeyError as error:
+        secho(str(error), fg=Color.error)
     except (RuntimeError, RuntimeWarning) as error:
         secho(str(error), fg=Color.error)
 
@@ -129,55 +148,44 @@ def update() -> None:
 
 @update.command("repository-record")
 @with_appcontext
+@option(
+    "--metadata",
+    type=JSON,
+    help="dict with marc-id, alma identifier",
+)
 @option("--marc-id", type=STRING, required=True)
 @option("--user-email", type=STRING, default="alma@tugraz.at")
 @option("--keep-access-as-is", type=BOOL, is_flag=True, default=False)
-@optgroup.group("Alma REST config")
+@option(
+    "--workflow",
+    type=STRING,
+    required=False,
+    default=None,
+    help="default is first of the possible dict",
+)
+@optgroup.group("Alma REST config (rest is prefered used over sru if both are given)")
 @optgroup.option("--api-key", type=STRING)
 @optgroup.option("--api-host", type=STRING)
 @optgroup.group("Alma SRU config")
 @optgroup.option("--search-key", type=STRING)
 @optgroup.option("--domain", type=STRING)
 @optgroup.option("--institution-code", type=STRING)
-@optgroup.group("Alma identifier", cls=RequiredMutuallyExclusiveOptionGroup)
-@optgroup.option("--mms-id", type=STRING, help="mms-id", default=None)
-@optgroup.option("--thesis-id", type=STRING, help="thesis-id", default=None)
+@build_identity
+@build_service
 def cli_update_repository_record(
-    marc_id: str,
-    user_email: str,
-    api_key: str,
-    api_host: str,
-    search_key: str,
-    domain: str,
-    institution_code: str,
-    mms_id: str,
-    thesis_id: str,
+    metadata: dict,
+    identity: Identity,
+    alma_service: AlmaRESTService | AlmaSRUService,
     *,
     keep_access_as_is: bool,
 ) -> None:
     """Update Repository record."""
-    if mms_id:
-        alma_thesis_id = mms_id
-        config = AlmaRESTConfig(api_key, api_host)
-        alma_service = AlmaRESTService(config=config)
-    elif thesis_id:
-        alma_thesis_id = thesis_id
-        config = AlmaSRUConfig(search_key, domain, institution_code)
-        alma_service = AlmaSRUService(config=config)
-    else:
-        msg = "Neither of mms_id and thesis_id were given."
-        secho(msg, fg=Color.error)
-
-    user = current_accounts.datastore.get_user_by_email(user_email)
-    identity = get_identity(user)
-
     update_func = current_app.config.get("ALMA_REPOSITORY_RECORDS_UPDATE_FUNC")
     update_func(
-        identity,
-        marc_id,
-        alma_thesis_id,
-        alma_service,
+        identity=identity,
+        alma_service=alma_service,
         update_access=not keep_access_as_is,
+        **metadata,
     )
 
 

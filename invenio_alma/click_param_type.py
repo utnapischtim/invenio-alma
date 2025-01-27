@@ -1,20 +1,19 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright (C) 2022-2023 Graz University of Technology.
+# Copyright (C) 2022-2025 Graz University of Technology.
 #
 # invenio-alma is free software; you can redistribute it and/or modify it
 # under the terms of the MIT License; see LICENSE file for more details.
 
 """Click param types."""
-from __future__ import annotations
-
 import sys
 from csv import DictReader
 from io import TextIOWrapper
+from json import JSONDecodeError, load, loads
 from pathlib import Path
 from typing import Any
 
-from click import ParamType, secho
+from click import Context, Parameter, ParamType, secho
 
 
 class CSV(ParamType):
@@ -44,9 +43,9 @@ class CSV(ParamType):
 
     def convert(
         self,
-        value: Any,  # noqa: ANN401
-        param: Any,  # noqa: ANN401, ARG002
-        ctx: Any,  # noqa: ANN401, ARG002
+        value: Any,
+        param: Parameter | None,  # noqa: ARG002
+        ctx: Context | None,  # noqa: ARG002
     ) -> DictReader:
         """Convert filename in value to an DictReader object."""
         if not Path(value).is_file():
@@ -62,3 +61,57 @@ class CSV(ParamType):
             sys.exit()
 
         return reader
+
+
+####
+# copy pasted from repository-cli
+# code slightly updated
+###
+def _error_msg(art: str, key: str) -> str:
+    """Construct error message."""
+    error_msgs = {
+        "validate": f"The given json does not validate, key: '{key}' does not exists",
+    }
+    return error_msgs[art]
+
+
+class JSON(ParamType):
+    """JSON provides the ability to load a json from a string or a file."""
+
+    name = "JSON"
+
+    def __init__(self, validate: list[str] | None = None) -> None:
+        """Construct Json ParamType."""
+        self.validate = validate
+
+    def convert(
+        self,
+        value: Any,
+        param: Parameter | None,  # noqa: ARG002
+        ctx: Context | None,  # noqa: ARG002
+    ) -> Any:
+        """The method converts the json-file to the dictionary representation."""
+        try:
+            if Path(value).is_file():
+                with Path(value).open("r", encoding="utf8") as file_pointer:
+                    obj = load(file_pointer)
+            else:
+                obj = loads(value)
+        except JSONDecodeError as error:
+            msg = "ERROR - Invalid JSON provided. Check file path or json string."
+            secho(msg, fg="red")
+            secho(f"  error: {error.args[0]}", fg="red")
+            sys.exit()
+
+        if self.validate:
+            for key in self.validate:
+                if key not in obj:
+                    secho(_error_msg("validate", key), fg="red")
+                    sys.exit()
+
+        return obj
+
+
+####
+# copy pasted from repository-cli END
+###

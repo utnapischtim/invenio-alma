@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright (C) 2021-2024 Graz University of Technology.
+# Copyright (C) 2021-2026 Graz University of Technology.
 #
 # invenio-alma is free software; you can redistribute it and/or modify it
 # under the terms of the MIT License; see LICENSE file for more details.
@@ -17,7 +17,7 @@ from .proxies import current_alma
 from .services.errors import AlmaAPIError
 
 
-def is_duplicate_in_alma(cms_id: str) -> None:
+def is_duplicate_in_alma(cms_id: str) -> bool:
     """Check if there is already a record in alma."""
     sru_service = current_alma.alma_sru_service
     search_key = "local_field_995"

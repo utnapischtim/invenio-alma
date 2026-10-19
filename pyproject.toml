@@ -1,6 +1,81 @@
+# -*- coding: utf-8 -*-
+#
+# Copyright (C) 2021-2026 Graz University of Technology.
+#
+# invenio-alma is free software; you can redistribute it and/or modify it
+# under the terms of the MIT License; see LICENSE file for more details.
+
+[project]
+name = "invenio-alma"
+description = "Provides API for Alma."
+license = { file = "LICENSE" }
+authors = [{ name = "Graz University of Technology", email = "info@tugraz.at" }]
+dynamic = ["version"]
+urls = { Repository = "https://github.com/tu-graz-library/invenio-alma" }
+classifiers = [
+  "Development Status :: 5 - Production/Stable",
+  "Programming Language :: Python :: 3.14",
+]
+requires-python = ">=3.12"
+
+dependencies = [
+  "click>=7.0.0",
+  "click-option-group>=0.5.3",
+  "flask-resources>=1.2.0",
+  "invenio-access>=2.0.0",
+  "invenio-accounts>=3.0.0",
+  "invenio-jobs>=3.0.0",
+  "requests>=2.0.0",
+]
+
+[project.scripts]
+alma = "invenio_alma.cli:alma"
+
+[project.entry-points."flask.commands"]
+alma = "invenio_alma.cli:alma"
+
+[project.entry-points."invenio_base.apps"]
+invenio_alma = "invenio_alma:InvenioAlma"
+
+[project.entry-points."invenio_base.api_apps"]
+invenio_alma = "invenio_alma:InvenioAlma"
+
+[project.entry-points."invenio_base.api_blueprints"]
+invenio_alma_records = "invenio_alma.views:create_record_bp"
+
+[project.entry-points."invenio_celery.tasks"]
+invenio_alma = "invenio_alma.tasks"
+
+[project.entry-points."invenio_jobs.jobs"]
+create_records = "invenio_alma.jobs:CreateAlmaRecordsJob"
+update_records = "invenio_alma.jobs:UpdateRepositoryRecordsJob"
+
+[project.optional-dependencies]
+tests = [
+  "invenio-app>=1.5.0",
+  "invenio-cache>=1.1.0",
+  "invenio-records-resources>=8.0.0",
+  "invenio-search[opensearch2]>=2.1.0",
+  "pytest-invenio>=1.4.3",
+  "pytest-black>=0.6.0",
+  "ruff>=0.0.263",
+  "Sphinx>=4.2.0",
+]
+
 [build-system]
-requires = ["setuptools", "wheel"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.version]
+path = "invenio_alma/__init__.py"
+
+[tool.hatch.build]
+exclude = [
+  ".github/**",
+  "tests/**",
+  ".gitignore",
+  "run-tests.sh",
+]
 
 [tool.ruff]
 exclude = ["docs"]
@@ -8,21 +83,29 @@ exclude = ["docs"]
 [tool.ruff.lint]
 select = ["ALL"]
 ignore = [
-  "D203", "D211", "D212", "D213",
+  "D203",
+  "D211",
+  "D212",
+  "D213",
   "E501",
   "FA102",
   "INP001",
   "G",
   "N802",
   "PERF203",
-  "PLR0913", "PLR0911",
+  "PLR0913",
+  "PLR0911",
   "RET504",
   "S101",
   "TCH",
   "TD",
-  "TRY300", "TRY400",
-  "UP009"
+  "TRY300",
+  "TRY400",
+  "UP009",
 ]
+
+[tool.isort]
+profile = "black"
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**.py" = [
@@ -39,3 +122,7 @@ strict_equality = true
 follow_untyped_imports = true
 disallow_any_generics = false
 python_executable = ".venv/bin/python"
+
+[tool.pytest.ini_options]
+addopts = "--black --isort --cov=invenio_alma --cov-report=term-missing"
+testpaths = "tests invenio_alma"

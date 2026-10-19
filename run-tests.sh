@@ -18,5 +18,4 @@ set -o nounset
 
 ruff check .
 
-python -m check_manifest
 python -m pytest -s

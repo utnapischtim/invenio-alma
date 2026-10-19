@@ -64,12 +64,6 @@ ALMA_ERROR_MAIL_SENDER: str = ""
 ALMA_ERROR_MAIL_RECIPIENTS: list[str] = []
 """This is a list of recipients who should get the error message."""
 
-ALMA_CELERY_BEAT_SCHEDULE: dict = {}
-"""Celery beat schedule for the theses import.
-
-This should be set on the InvenioRDM instance invenio.cfg file.
-"""
-
 ALMA_SRU_DOMAIN = ""
 """SRU domain.
 

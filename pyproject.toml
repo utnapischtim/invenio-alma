@@ -15,20 +15,12 @@ classifiers = [
 requires-python = ">=3.12"
 
 dependencies = [
-  "click>=7.0.0",
-  "click-option-group>=0.5.3",
   "flask-resources>=1.2.0",
   "invenio-access>=2.0.0",
   "invenio-accounts>=3.0.0",
   "invenio-jobs>=3.0.0",
   "requests>=2.0.0",
 ]
-
-[project.scripts]
-alma = "invenio_alma.cli:alma"
-
-[project.entry-points."flask.commands"]
-alma = "invenio_alma.cli:alma"
 
 [project.entry-points."invenio_base.apps"]
 invenio_alma = "invenio_alma:InvenioAlma"

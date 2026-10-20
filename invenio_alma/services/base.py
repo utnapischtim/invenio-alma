@@ -35,9 +35,7 @@ class AlmaAPIBase:
     @staticmethod
     def parse_alma_record(data: str) -> Element:
         """Parse Alma record."""
-        data = data.encode("utf-8")
-
-        return fromstring(data)  # noqa: S314
+        return fromstring(data.encode("utf-8"))  # noqa: S314
 
     def extract_alma_records(self, data: str) -> list[Element]:
         """Extract record from request.

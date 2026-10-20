@@ -6,7 +6,7 @@
 from .ext import InvenioAlma
 from .services import AlmaRESTService, AlmaSRUService
 
-__version__ = "0.14.2"
+__version__ = "0.15.0"
 
 __all__ = (
     "AlmaRESTService",

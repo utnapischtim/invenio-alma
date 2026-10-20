@@ -25,10 +25,10 @@ def is_duplicate_in_alma(cms_id: str) -> bool:
         return False
 
 
-def apply_aggregators(aggregators: list[Callable[[], list]]) -> list:
+def apply_aggregators[T](aggregators: list[Callable[[], list[T]]]) -> list:
     """Apply aggregators."""
 
-    def func(accumulator: list, aggregator: Callable) -> list:
+    def func(accumulator: list[T], aggregator: Callable[[], list[T]]) -> list[T]:
         return accumulator + aggregator()
 
     return functools.reduce(func, aggregators, [])

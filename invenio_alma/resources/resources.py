@@ -3,6 +3,8 @@
 
 """Alma API Resource."""
 
+from xml.etree.ElementTree import Element
+
 from flask import abort
 from flask_resources import (
     Resource,
@@ -14,7 +16,8 @@ from flask_resources import (
     route,
 )
 
-from ..services.errors import AlmaAPIError  # noqa: TID252
+from ..services import AlmaSRUService
+from ..services.errors import AlmaAPIError
 from .config import AlmaResourceConfig
 
 request_view_args = request_parser(from_conf("request_view_args"), location="view_args")
@@ -32,7 +35,11 @@ class AlmaResource(Resource):
     config_name = "ALMA_RESOURCES_CONFIG"
     default_config = AlmaResourceConfig
 
-    def __init__(self, service, config=default_config) -> None:  # noqa: ANN001
+    def __init__(
+        self,
+        service: AlmaSRUService,
+        config: AlmaResourceConfig,
+    ) -> None:
         """Initialize the alma resource."""
         super().__init__(config=config)
         self.service = service
@@ -50,7 +57,7 @@ class AlmaResource(Resource):
     @request_read_args
     @request_view_args
     @response_handler()
-    def read(self) -> dict[dict, int]:
+    def read(self) -> tuple[list[Element], int]:
         """Read an item."""
         record_id = resource_requestctx.view_args["record_id"]
         type_id = resource_requestctx.view_args["type"]

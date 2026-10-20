@@ -95,5 +95,5 @@ class InvenioAlma:
 
         self._alma_resource = AlmaResource(
             service=AlmaSRUService(config=config),
-            config=AlmaResourceConfig,
+            config=AlmaResourceConfig(),
         )

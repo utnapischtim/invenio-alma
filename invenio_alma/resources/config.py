@@ -36,7 +36,6 @@ class AlmaResourceConfig(ResourceConfig):
     )
 
     # Request parsing
-    request_read_args = MappingProxyType({})
     request_view_args = MappingProxyType(
         {
             "type": Str(),

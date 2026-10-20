@@ -38,10 +38,10 @@ class CreateAlmaRecordsJob(JobType):
     arguments_schema = AlmaPredefinedArgsSchema
 
     @classmethod
-    def build_task_arguments(
+    def build_task_arguments(  # type: ignore[override]
         cls,
         job_obj: Job,  # noqa: ARG003
-        workflow: str | None = None,
+        workflow: str,
         **__: dict,
     ) -> dict[str, str]:
         """Define extra arguments to be injected on task execution."""
@@ -60,10 +60,10 @@ class UpdateRepositoryRecordsJob(JobType):
     arguments_schema = AlmaPredefinedArgsSchema
 
     @classmethod
-    def build_task_arguments(
+    def build_task_arguments(  # type: ignore[override]
         cls,
         job_obj: Job,  # noqa: ARG003
-        workflow: str | None = None,
+        workflow: str,
         **__: dict,
     ) -> dict[str, str]:
         """Define extra arguments to be injected on task execution."""

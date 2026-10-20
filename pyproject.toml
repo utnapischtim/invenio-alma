@@ -17,7 +17,6 @@ requires-python = ">=3.12"
 dependencies = [
   "flask-resources>=1.2.0",
   "invenio-access>=2.0.0",
-  "invenio-accounts>=3.0.0",
   "invenio-jobs>=3.0.0",
   "requests>=2.0.0",
 ]
